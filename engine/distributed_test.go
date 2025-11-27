@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/engine"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/engine"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/efficientgo/core/testutil"
@@ -111,14 +111,16 @@ func TestDistributedAggregations(t *testing.T) {
 			},
 		},
 		{
-			// Repro for https://github.com/thanos-io/promql-engine/issues/187.
+			// Repro for https://github.com/oteldb/promql-engine/issues/187.
 			name: "series with different ranges in a newer engine",
-			seriesSets: []partition{{
-				extLset: []labels.Labels{labels.FromStrings("zone", "east-1"), labels.FromStrings("zone", "east-1")},
-				series: []*mockSeries{
-					newMockSeries(makeSeries("east-1", "nginx-1"), []int64{60, 90, 120}, []float64{3, 4, 5}),
-					newMockSeries(makeSeries("east-2", "nginx-1"), []int64{30, 60, 90, 120}, []float64{3, 4, 5, 6}),
-				}},
+			seriesSets: []partition{
+				{
+					extLset: []labels.Labels{labels.FromStrings("zone", "east-1"), labels.FromStrings("zone", "east-1")},
+					series: []*mockSeries{
+						newMockSeries(makeSeries("east-1", "nginx-1"), []int64{60, 90, 120}, []float64{3, 4, 5}),
+						newMockSeries(makeSeries("east-2", "nginx-1"), []int64{30, 60, 90, 120}, []float64{3, 4, 5, 6}),
+					},
+				},
 			},
 			timeOverlap: partition{
 				extLset: []labels.Labels{labels.FromStrings("zone", "east-1"), labels.FromStrings("zone", "east-2")},
@@ -130,11 +132,13 @@ func TestDistributedAggregations(t *testing.T) {
 		},
 		{
 			name: "verify double lookback is not applied",
-			seriesSets: []partition{{
-				extLset: []labels.Labels{labels.FromStrings("zone", "east-2")},
-				series: []*mockSeries{
-					newMockSeries(makeSeries("east-2", "nginx-1"), []int64{30, 60, 90, 120}, []float64{3, 4, 5, 6}),
-				}},
+			seriesSets: []partition{
+				{
+					extLset: []labels.Labels{labels.FromStrings("zone", "east-2")},
+					series: []*mockSeries{
+						newMockSeries(makeSeries("east-2", "nginx-1"), []int64{30, 60, 90, 120}, []float64{3, 4, 5, 6}),
+					},
+				},
 			},
 			timeOverlap: partition{
 				extLset: []labels.Labels{labels.FromStrings("zone", "east-2")},
@@ -172,7 +176,8 @@ func TestDistributedAggregations(t *testing.T) {
 				extLset: []labels.Labels{labels.FromStrings("zone", "us-east1")},
 				series: []*mockSeries{
 					newMockSeries(makeSeries("us-east1", "nginx-1"), []int64{30, 60, 90, 120, 150}, []float64{3, 4, 5, 6, 9}),
-				}}, {
+				},
+			}, {
 				extLset: []labels.Labels{labels.FromStrings("zone", "us-east2")},
 				series: []*mockSeries{
 					newMockSeries(makeSeries("us-east2", "nginx-2"), []int64{90, 120, 150}, []float64{7, 9, 11}),
@@ -254,7 +259,8 @@ func TestDistributedAggregations(t *testing.T) {
 		{name: "subquery with window outside of engine range", query: `max_over_time(sum_over_time(bar[1m])[10m:1m])`},
 		{name: "subquery with misaligned ranges", rangeStart: time.Unix(7, 0), query: `max_over_time(sum(bar)[30s:15s])`},
 		{name: "subquery with misaligned ranges", rangeStart: time.Unix(7, 0), query: `max_over_time(sum(sum(bar))[30s:15s])`},
-		{name: "nested subqueries",
+		{
+			name:       "nested subqueries",
 			rangeStart: time.Unix(7, 0),
 			query:      `max_over_time(min_over_time(sum(bar)[15s:15s])[15s:15s])`,
 		},

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thanos-io/promql-engine/execution/parse"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"

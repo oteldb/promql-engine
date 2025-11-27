@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/efficientgo/core/testutil"
 	"github.com/prometheus/prometheus/model/labels"
@@ -120,5 +120,4 @@ func TestPassthrough(t *testing.T) {
 
 		testutil.Equals(t, `{region="east"}`, renderExprTree(optimizedPlan.Root()))
 	})
-
 }

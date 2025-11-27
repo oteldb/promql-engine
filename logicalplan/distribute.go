@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -20,9 +20,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
-var (
-	RewrittenExternalLabelWarning = errors.Newf("%s: rewriting an external label with label_replace can disable distributed query execution", annotations.PromQLWarning.Error())
-)
+var RewrittenExternalLabelWarning = errors.Newf("%s: rewriting an external label with label_replace can disable distributed query execution", annotations.PromQLWarning.Error())
 
 type timeRange struct {
 	start time.Time
@@ -177,7 +175,37 @@ func (m DistributedExecutionOptimizer) Optimize(plan Node, opts *query.Options) 
 		}
 	}
 
-	var warns = annotations.New()
+	// Preprocess rewrite distributable averages as sum/count
+	warns := annotations.New()
+	TraverseBottomUp(nil, &plan, func(parent, current *Node) (stop bool) {
+		if !(isDistributive(current, m.SkipBinaryPushdown, engineLabels, warns) || isAvgAggregation(current)) {
+			return true
+		}
+		// If the current node is avg(), distribute the operation and
+		// stop the traversal.
+		if aggr, ok := (*current).(*Aggregation); ok {
+			if aggr.Op != parser.AVG {
+				return true
+			}
+
+			sum := *(*current).(*Aggregation)
+			sum.Op = parser.SUM
+			count := *(*current).(*Aggregation)
+			count.Op = parser.COUNT
+			*current = &Binary{
+				Op:  parser.DIV,
+				LHS: &sum,
+				RHS: &count,
+				VectorMatching: &parser.VectorMatching{
+					Include:        aggr.Grouping,
+					MatchingLabels: aggr.Grouping,
+					On:             !aggr.Without,
+				},
+			}
+			return true
+		}
+		return !(isDistributive(parent, m.SkipBinaryPushdown, engineLabels, warns) || isAvgAggregation(parent))
+	})
 
 	// TODO(fpetkovski): Consider changing TraverseBottomUp to pass in a list of parents in the transform function.
 	parents := make(map[*Node]*Node)

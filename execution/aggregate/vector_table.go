@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/thanos-io/promql-engine/compute"
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/compute"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/parse"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/promql/parser"

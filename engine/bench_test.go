@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/engine"
-	"github.com/thanos-io/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/engine"
+	"github.com/oteldb/promql-engine/logicalplan"
 
 	"github.com/efficientgo/core/testutil"
 	"github.com/prometheus/prometheus/model/labels"
@@ -88,7 +88,6 @@ func BenchmarkChunkDecoding(b *testing.B) {
 }
 
 func BenchmarkSingleQuery(b *testing.B) {
-
 	memProfileRate := runtime.MemProfileRate
 	runtime.MemProfileRate = 0
 
@@ -443,7 +442,6 @@ func BenchmarkRangeQuery(b *testing.B) {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.Run("old_engine", func(b *testing.B) {
-
 				promEngine := promql.NewEngine(opts.EngineOpts)
 
 				b.ResetTimer()
@@ -833,7 +831,6 @@ func BenchmarkMergeSelectorsOptimizer(b *testing.B) {
 			testutil.Ok(b, res.Err)
 		}
 	})
-
 }
 
 func executeRangeQuery(b *testing.B, q string, storage *teststorage.TestStorage, start time.Time, end time.Time, step time.Duration, opts engine.Opts) *promql.Result {

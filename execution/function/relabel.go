@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/logicalplan"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/efficientgo/core/errors"
 	prommodel "github.com/prometheus/common/model"
@@ -112,6 +112,7 @@ func (o *relabelOperator) loadSeriesForLabelJoin(series []labels.Labels) error {
 	}
 	return nil
 }
+
 func (o *relabelOperator) loadSeriesForLabelReplace(series []labels.Labels) error {
 	labelReplaceDst, err := logicalplan.UnwrapString(o.funcExpr.Args[1])
 	if err != nil {

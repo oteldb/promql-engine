@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/parse"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/ringbuffer"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/ringbuffer"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/histogram"
@@ -195,8 +195,8 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 			// TODO(saswatamcode): Handle multi-arg functions for matrixSelectors.
 			// Also, allow operator to exist independently without being nested
 			// under parser.Call by implementing new data model.
-			// https://github.com/thanos-io/promql-engine/issues/39
-			f, h, ok, warn, err := scanner.buffer.Eval(ctx, o.scalarArg, o.scalarArg2, scanner.metricAppearedTs)
+			// https://github.com/oteldb/promql-engine/issues/39
+			f, h, ok, err := scanner.buffer.Eval(ctx, o.scalarArg, o.scalarArg2, scanner.metricAppearedTs)
 			if err != nil {
 				return 0, err
 			}

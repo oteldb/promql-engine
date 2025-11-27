@@ -7,7 +7,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/util/annotations"
@@ -58,7 +58,7 @@ func (p ProjectionOptimizer) pushProjection(node *Node, projection *Projection) 
 		}
 
 	case *Binary:
-		var highCard, lowCard = n.LHS, n.RHS
+		highCard, lowCard := n.LHS, n.RHS
 
 		if n.VectorMatching == nil || (!n.VectorMatching.On && len(n.VectorMatching.MatchingLabels) == 0) {
 			if IsConstantExpr(lowCard) {

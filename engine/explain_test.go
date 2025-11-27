@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/engine"
+	"github.com/oteldb/promql-engine/engine"
 
 	"github.com/efficientgo/core/testutil"
 	"github.com/prometheus/prometheus/model/labels"
@@ -251,6 +251,7 @@ func TestQueryAnalyze(t *testing.T) {
 		}
 	}
 }
+
 func TestAnalyzeOutputNode_Samples(t *testing.T) {
 	t.Parallel()
 	ng := engine.New(engine.Opts{EngineOpts: promql.EngineOpts{Timeout: 1 * time.Hour}, EnableAnalysis: true, DecodingConcurrency: 2})

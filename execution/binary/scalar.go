@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -88,8 +88,8 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, err
 	}
 
-	var lhsN int
-	var lerrChan = make(chan error, 1)
+	var lhs []model.StepVector
+	lerrChan := make(chan error, 1)
 	go func() {
 		var err error
 		lhsN, err = o.lhs.Next(ctx, o.lhsBuf)
@@ -115,15 +115,23 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, nil
 	}
 
-	n := 0
-	minN := min(rhsN, lhsN)
-
-	for i := 0; i < minN && n < len(buf); i++ {
-		o.execBinaryOperation(ctx, o.lhsBuf[i], o.rhsBuf[i], &buf[n])
-		n++
+	batch := o.pool.GetVectorBatch()
+	for i := range lhs {
+		if i < len(rhs) {
+			step := o.execBinaryOperation(ctx, lhs[i], rhs[i])
+			batch = append(batch, step)
+			o.rhs.GetPool().PutStepVector(rhs[i])
+		}
+		o.lhs.GetPool().PutStepVector(lhs[i])
 	}
+	o.lhs.GetPool().PutVectors(lhs)
+	o.rhs.GetPool().PutVectors(rhs)
 
-	return n, nil
+	return batch, nil
+}
+
+func (o *scalarOperator) GetPool() *model.VectorPool {
+	return o.pool
 }
 
 func (o *scalarOperator) loadSeries(ctx context.Context) error {
