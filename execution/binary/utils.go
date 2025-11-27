@@ -111,7 +111,7 @@ func binOp(op parser.ItemType, lhs, rhs float64, hlhs, hrhs *histogram.FloatHist
 		{
 			switch op {
 			case parser.ADD:
-				res, err := hlhs.Copy().Add(hrhs)
+				res, _, err := hlhs.Copy().Add(hrhs)
 				if err != nil {
 					if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 						return 0, nil, false, annotations.MixedExponentialCustomHistogramsWarning
@@ -122,7 +122,7 @@ func binOp(op parser.ItemType, lhs, rhs float64, hlhs, hrhs *histogram.FloatHist
 				}
 				return 0, res.Compact(0), true, nil
 			case parser.SUB:
-				res, err := hlhs.Copy().Sub(hrhs)
+				res, _, err := hlhs.Copy().Sub(hrhs)
 				if err != nil {
 					if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 						return 0, nil, false, annotations.MixedExponentialCustomHistogramsWarning

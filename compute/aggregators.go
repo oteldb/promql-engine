@@ -76,7 +76,7 @@ func (s *SumAcc) Add(v float64, h *histogram.FloatHistogram) error {
 	// https://github.com/prometheus/prometheus/blob/57bcbf18880f7554ae34c5b341d52fc53f059a97/promql/engine.go#L2448-L2456
 	var err error
 	if h.Schema >= s.histSum.Schema {
-		if s.histSum, err = s.histSum.Add(h); err != nil {
+		if s.histSum, _, err = s.histSum.Add(h); err != nil {
 			if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 				return annotations.MixedExponentialCustomHistogramsWarning
 			}
@@ -87,7 +87,7 @@ func (s *SumAcc) Add(v float64, h *histogram.FloatHistogram) error {
 		}
 	} else {
 		t := h.Copy()
-		if s.histSum, err = t.Add(s.histSum); err != nil {
+		if s.histSum, _, err = t.Add(s.histSum); err != nil {
 			if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 				return annotations.MixedExponentialCustomHistogramsWarning
 			}
@@ -325,6 +325,7 @@ func (c *CountAcc) ValueType() ValueType {
 		return NoValue
 	}
 }
+
 func (c *CountAcc) Reset(_ float64) {
 	c.hasValue = false
 	c.value = 0
@@ -362,11 +363,11 @@ func (a *AvgAcc) Add(v float64, h *histogram.FloatHistogram) error {
 		left := a.histScratch.Div(a.histCount)
 		a.histSum.CopyTo(a.histSumScratch)
 		right := a.histSumScratch.Div(a.histCount)
-		toAdd, err := left.Sub(right)
+		toAdd, _, err := left.Sub(right)
 		if err != nil {
 			return err
 		}
-		a.histSum, err = a.histSum.Add(toAdd)
+		a.histSum, _, err = a.histSum.Add(toAdd)
 		return err
 	}
 
@@ -499,6 +500,7 @@ func (s *statAcc) ValueType() ValueType {
 		return NoValue
 	}
 }
+
 func (s *statAcc) Reset(_ float64) {
 	s.hasValue = false
 	s.count = 0
@@ -639,12 +641,12 @@ func (acc *HistogramAvgAcc) Add(v float64, h *histogram.FloatHistogram) error {
 	}
 	var err error
 	if h.Schema >= acc.sum.Schema {
-		if acc.sum, err = acc.sum.Add(h); err != nil {
+		if acc.sum, _, err = acc.sum.Add(h); err != nil {
 			return err
 		}
 	} else {
 		t := h.Copy()
-		if _, err = t.Add(acc.sum); err != nil {
+		if _, _, err = t.Add(acc.sum); err != nil {
 			return err
 		}
 		acc.sum = t
@@ -726,7 +728,7 @@ func histogramSum(current *histogram.FloatHistogram, histograms []*histogram.Flo
 	var err error
 	for i := range histograms {
 		if histograms[i].Schema >= histSum.Schema {
-			histSum, err = histSum.Add(histograms[i])
+			histSum, _, err = histSum.Add(histograms[i])
 			if err != nil {
 				if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 					return nil, annotations.MixedExponentialCustomHistogramsWarning
@@ -738,7 +740,7 @@ func histogramSum(current *histogram.FloatHistogram, histograms []*histogram.Flo
 			}
 		} else {
 			t := histograms[i].Copy()
-			if histSum, err = t.Add(histSum); err != nil {
+			if histSum, _, err = t.Add(histSum); err != nil {
 				if errors.Is(err, histogram.ErrHistogramsIncompatibleSchema) {
 					return nil, annotations.NewMixedExponentialCustomHistogramsWarning("", posrange.PositionRange{})
 				}
