@@ -85,7 +85,8 @@ func TestPromqlAcceptance(t *testing.T) {
 			MaxSamples:               5e10,
 			Timeout:                  1 * time.Hour,
 			NoStepSubqueryIntervalFn: func(rangeMillis int64) int64 { return 30 * time.Second.Milliseconds() },
-		}})
+		},
+	})
 
 	st := &skipTest{
 		skipTests: []string{
@@ -2528,7 +2529,6 @@ func TestWarningsPlanCreation(t *testing.T) {
 	testutil.WithGoCmp(cmp.Comparer(func(err1, err2 error) bool {
 		return err1.Error() == err2.Error()
 	})).Equals(t, annotations.New().Add(expectedWarn), res.Warnings)
-
 }
 
 func TestEdgeCases(t *testing.T) {
@@ -2639,7 +2639,7 @@ func TestXFunctionsRangeQuery(t *testing.T) {
 				promql.Series{
 					Metric: labels.New(),
 					Floats: []promql.FPoint{
-						{T: 00_000, F: 1},
+						{T: 0o0_000, F: 1},
 						{T: 20_000, F: 9}, // TODO: this seems odd, feels like it should be 5
 						{T: 40_000, F: 0},
 						{T: 60_000, F: 0},
@@ -2661,7 +2661,7 @@ func TestXFunctionsRangeQuery(t *testing.T) {
 				promql.Series{
 					Metric: labels.New(),
 					Floats: []promql.FPoint{
-						{T: 00_000, F: 1},
+						{T: 0o0_000, F: 1},
 						{T: 10_000, F: 4},
 						{T: 20_000, F: 5},
 						{T: 30_000, F: 10},
@@ -2686,7 +2686,7 @@ func TestXFunctionsRangeQuery(t *testing.T) {
 				promql.Series{
 					Metric: labels.New(),
 					Floats: []promql.FPoint{
-						{T: 00_000, F: 1},
+						{T: 0o0_000, F: 1},
 						{T: 10_000, F: 4},
 						{T: 20_000, F: 9},
 						{T: 30_000, F: 15},
@@ -4727,7 +4727,8 @@ func TestQueryConcurrency(t *testing.T) {
 			Timeout:            1 * time.Hour,
 			MaxSamples:         math.MaxInt64,
 			ActiveQueryTracker: promql.NewActiveQueryTracker(t.TempDir(), concurrency, logger),
-		}},
+		},
+	},
 	)
 	for range maxQueries {
 		go func() {
@@ -6137,8 +6138,10 @@ func (b samplesByLabels) Len() int           { return len(b) }
 func (b samplesByLabels) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b samplesByLabels) Less(i, j int) bool { return labels.Compare(b[i].Metric, b[j].Metric) < 0 }
 
-const epsilon = 1e-6
-const fraction = 1e-10
+const (
+	epsilon  = 1e-6
+	fraction = 1e-10
+)
 
 func floatsMatch(f1, f2 []float64) bool {
 	if len(f1) != len(f2) {

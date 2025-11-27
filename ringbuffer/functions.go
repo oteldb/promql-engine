@@ -749,7 +749,6 @@ func madOverTime(points []Sample) (float64, bool, warnings.Warnings) {
 			continue
 		} else {
 			floatsDetected = true
-
 		}
 		values = append(values, f.V.F)
 	}
