@@ -7,7 +7,7 @@ import (
 	"context"
 	"math"
 
-	"github.com/thanos-io/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/execution/telemetry"
 
 	"github.com/prometheus/prometheus/model/histogram"
 )

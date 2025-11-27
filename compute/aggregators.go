@@ -7,7 +7,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/histogram"

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -20,9 +20,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
-var (
-	RewrittenExternalLabelWarning = errors.Newf("%s: rewriting an external label with label_replace can disable distributed query execution", annotations.PromQLWarning.Error())
-)
+var RewrittenExternalLabelWarning = errors.Newf("%s: rewriting an external label with label_replace can disable distributed query execution", annotations.PromQLWarning.Error())
 
 type timeRange struct {
 	start time.Time
@@ -178,7 +176,7 @@ func (m DistributedExecutionOptimizer) Optimize(plan Node, opts *query.Options) 
 	}
 
 	// Preprocess rewrite distributable averages as sum/count
-	var warns = annotations.New()
+	warns := annotations.New()
 	TraverseBottomUp(nil, &plan, func(parent, current *Node) (stop bool) {
 		if !(isDistributive(current, m.SkipBinaryPushdown, engineLabels, warns) || isAvgAggregation(current)) {
 			return true

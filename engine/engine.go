@@ -13,16 +13,16 @@ import (
 	"sort"
 	"time"
 
-	"github.com/thanos-io/promql-engine/execution"
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/parse"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/logicalplan"
-	"github.com/thanos-io/promql-engine/query"
-	engstorage "github.com/thanos-io/promql-engine/storage"
-	promstorage "github.com/thanos-io/promql-engine/storage/prometheus"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/query"
+	engstorage "github.com/oteldb/promql-engine/storage"
+	promstorage "github.com/oteldb/promql-engine/storage/prometheus"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -201,12 +201,10 @@ func NewWithScanners(opts Opts, scanners engstorage.Scanners) *Engine {
 	}
 }
 
-var (
-	// Duplicate label checking logic uses a bitmap with 64 bits currently.
-	// As long as we use this method we need to have batches that are smaller
-	// then 64 steps.
-	ErrStepsBatchTooLarge = errors.New("'StepsBatch' must be less than 64")
-)
+// Duplicate label checking logic uses a bitmap with 64 bits currently.
+// As long as we use this method we need to have batches that are smaller
+// then 64 steps.
+var ErrStepsBatchTooLarge = errors.New("'StepsBatch' must be less than 64")
 
 type Engine struct {
 	functions          map[string]*parser.Function

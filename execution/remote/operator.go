@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/query"
-	promstorage "github.com/thanos-io/promql-engine/storage/prometheus"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/query"
+	promstorage "github.com/oteldb/promql-engine/storage/prometheus"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/labels"

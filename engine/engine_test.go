@@ -21,13 +21,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/engine"
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/logicalplan"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/storage/prometheus"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/engine"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/storage/prometheus"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/efficientgo/core/testutil"
@@ -1239,7 +1239,7 @@ or
 			query: `group by (pod) (http_requests_total)`,
 		},
 		{
-			// Issue https://github.com/thanos-io/promql-engine/issues/326.
+			// Issue https://github.com/oteldb/promql-engine/issues/326.
 			name: "group by with NaN values",
 			load: `load 30s
 			    http_requests_total{pod="nginx-1", route="/"} 1.00+1.00x4
@@ -2142,7 +2142,7 @@ topk(
 			query: `scalar(avg_over_time({__name__="http_requests_total"}[3m])) > bool 0.9464749352949011`,
 		},
 		{
-			name: "repro https://github.com/thanos-io/promql-engine/issues/239",
+			name: "repro https://github.com/oteldb/promql-engine/issues/239",
 			load: `load 30s
 			    storage_used{storage_index="1010"} 65x20
 			    storage_used{storage_index="1011"} 125x20
@@ -6009,8 +6009,8 @@ func generateNativeHistogramSeries(app storage.Appender, numSeries int, withMixe
 			if i == 0 {
 				// Inject a histogram with a higher schema.
 				// Regression test for:
-				// * https://github.com/thanos-io/promql-engine/pull/182
-				// * https://github.com/thanos-io/promql-engine/pull/183.
+				// * https://github.com/oteldb/promql-engine/pull/182
+				// * https://github.com/oteldb/promql-engine/pull/183.
 				if _, err := app.AppendHistogram(0, labels.FromStrings(lbls...), ts, higherSchemaHist, nil); err != nil {
 					return err
 				}

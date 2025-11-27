@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/engine"
-	"github.com/thanos-io/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/engine"
+	"github.com/oteldb/promql-engine/logicalplan"
 
 	"github.com/cortexproject/promqlsmith"
 	"github.com/efficientgo/core/testutil"

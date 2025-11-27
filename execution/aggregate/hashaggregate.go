@@ -9,11 +9,11 @@ import (
 	"math"
 	"sync"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/parse"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -60,7 +60,6 @@ func NewHashAggregate(
 	// https://github.com/prometheus/prometheus/blob/8ed39fdab1ead382a354e45ded999eb3610f8d5f/model/labels/labels.go#L162-L181
 	slices.Sort(labels)
 	a := &aggregate{
-
 		next:        next,
 		paramOp:     paramOp,
 		params:      make([]float64, opts.StepsBatch),

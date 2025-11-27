@@ -6,8 +6,8 @@ package function
 import (
 	"context"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/logicalplan"
 
 	"github.com/prometheus/prometheus/model/labels"
 )

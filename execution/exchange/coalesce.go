@@ -9,9 +9,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -99,7 +99,7 @@ func (c *coalesce) Next(ctx context.Context) ([]model.StepVector, error) {
 
 	var mu sync.Mutex
 	var minTs int64 = math.MaxInt64
-	var errChan = make(errorChan, len(c.operators))
+	errChan := make(errorChan, len(c.operators))
 	for idx, o := range c.operators {
 		// We already have a batch from the previous iteration.
 		if c.inVectors[idx] != nil {
@@ -192,7 +192,6 @@ func (c *coalesce) loadSeries(ctx context.Context) error {
 				case error:
 					errChan <- errors.Wrapf(err, "unexpected error")
 				}
-
 			}()
 			series, err := c.operators[i].Series(ctx)
 			if err != nil {
