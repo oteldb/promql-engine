@@ -7,6 +7,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/oteldb/promql-engine/execution/exchange"
 	"github.com/oteldb/promql-engine/execution/model"
 	"github.com/oteldb/promql-engine/execution/telemetry"
 	"github.com/oteldb/promql-engine/query"
@@ -20,12 +21,13 @@ type scalarOperator struct {
 }
 
 func newScalarOperator(pool *model.VectorPool, next model.VectorOperator, opts *query.Options) model.VectorOperator {
-	oper := &scalarOperator{
+	var op model.VectorOperator = &scalarOperator{
 		pool: pool,
 		next: next,
 	}
-
-	return telemetry.NewOperator(telemetry.NewTelemetry(oper, opts), oper)
+	op = telemetry.NewOperator(telemetry.NewTelemetry(op, opts), op)
+	op = exchange.NewConcurrent(op, 2, opts)
+	return op
 }
 
 func (o *scalarOperator) String() string {
