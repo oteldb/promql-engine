@@ -6,6 +6,7 @@ package function
 import (
 	"context"
 	"math"
+	"sync"
 
 	"github.com/oteldb/promql-engine/execution/model"
 	"github.com/oteldb/promql-engine/execution/telemetry"
@@ -16,6 +17,7 @@ import (
 
 type scalarOperator struct {
 	next model.VectorOperator
+	once sync.Once
 }
 
 func newScalarOperator(next model.VectorOperator, opts *query.Options) model.VectorOperator {
@@ -35,7 +37,8 @@ func (o *scalarOperator) Explain() (next []model.VectorOperator) {
 }
 
 func (o *scalarOperator) Series(ctx context.Context) ([]labels.Labels, error) {
-	return nil, nil
+	err := o.init(ctx)
+	return nil, err
 }
 
 func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int, error) {
@@ -63,4 +66,11 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 	}
 
 	return n, nil
+}
+
+func (o *scalarOperator) init(ctx context.Context) (err error) {
+	o.once.Do(func() {
+		_, err = o.next.Series(ctx)
+	})
+	return err
 }
