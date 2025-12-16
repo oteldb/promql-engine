@@ -6,8 +6,8 @@ package function
 import (
 	"context"
 	"math"
+	"sync"
 
-	"github.com/oteldb/promql-engine/execution/exchange"
 	"github.com/oteldb/promql-engine/execution/model"
 	"github.com/oteldb/promql-engine/execution/telemetry"
 	"github.com/oteldb/promql-engine/query"
@@ -18,16 +18,15 @@ import (
 type scalarOperator struct {
 	pool *model.VectorPool
 	next model.VectorOperator
+	once sync.Once
 }
 
 func newScalarOperator(pool *model.VectorPool, next model.VectorOperator, opts *query.Options) model.VectorOperator {
-	var op model.VectorOperator = &scalarOperator{
+	oper := &scalarOperator{
 		pool: pool,
 		next: next,
 	}
-	op = telemetry.NewOperator(telemetry.NewTelemetry(op, opts), op)
-	op = exchange.NewConcurrent(op, 2, opts)
-	return op
+	return telemetry.NewOperator(telemetry.NewTelemetry(oper, opts), oper)
 }
 
 func (o *scalarOperator) String() string {
@@ -39,7 +38,8 @@ func (o *scalarOperator) Explain() (next []model.VectorOperator) {
 }
 
 func (o *scalarOperator) Series(ctx context.Context) ([]labels.Labels, error) {
-	return nil, nil
+	err := o.init(ctx)
+	return nil, err
 }
 
 func (o *scalarOperator) GetPool() *model.VectorPool {
@@ -72,4 +72,11 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 	o.next.GetPool().PutVectors(in)
 
 	return n, nil
+}
+
+func (o *scalarOperator) init(ctx context.Context) (err error) {
+	o.once.Do(func() {
+		_, err = o.next.Series(ctx)
+	})
+	return err
 }
