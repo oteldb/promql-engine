@@ -256,7 +256,11 @@ func newInstantVectorFunction(ctx context.Context, e *logicalplan.FunctionCall, 
 		nextOperators = append(nextOperators, next)
 	}
 
-	return function.NewFunctionOperator(e, nextOperators, opts.StepsBatch, opts)
+	op, err := function.NewFunctionOperator(e, nextOperators, opts.StepsBatch, opts)
+	if err != nil {
+		return nil, err
+	}
+	return exchange.NewConcurrent(op, 2, opts), nil
 }
 
 func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, scanners storage.Scanners, opts *query.Options, hints promstorage.SelectHints) (model.VectorOperator, error) {
