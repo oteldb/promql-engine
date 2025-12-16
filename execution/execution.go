@@ -255,7 +255,6 @@ func newInstantVectorFunction(ctx context.Context, e *logicalplan.FunctionCall, 
 		}
 		nextOperators = append(nextOperators, next)
 	}
-
 	return function.NewFunctionOperator(e, nextOperators, opts.StepsBatch, opts)
 }
 

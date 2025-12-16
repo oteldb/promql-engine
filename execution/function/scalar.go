@@ -7,6 +7,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/oteldb/promql-engine/execution/exchange"
 	"github.com/oteldb/promql-engine/execution/model"
 	"github.com/oteldb/promql-engine/execution/telemetry"
 	"github.com/oteldb/promql-engine/query"
@@ -15,15 +16,18 @@ import (
 )
 
 type scalarOperator struct {
+	pool *model.VectorPool
 	next model.VectorOperator
 }
 
-func newScalarOperator(next model.VectorOperator, opts *query.Options) model.VectorOperator {
-	oper := &scalarOperator{
+func newScalarOperator(pool *model.VectorPool, next model.VectorOperator, opts *query.Options) model.VectorOperator {
+	var op model.VectorOperator = &scalarOperator{
+		pool: pool,
 		next: next,
 	}
-
-	return telemetry.NewOperator(telemetry.NewTelemetry(oper, opts), oper)
+	op = telemetry.NewOperator(telemetry.NewTelemetry(op, opts), op)
+	op = exchange.NewConcurrent(op, 2, opts)
+	return op
 }
 
 func (o *scalarOperator) String() string {
@@ -38,6 +42,10 @@ func (o *scalarOperator) Series(ctx context.Context) ([]labels.Labels, error) {
 	return nil, nil
 }
 
+func (o *scalarOperator) GetPool() *model.VectorPool {
+	return o.pool
+}
+
 func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int, error) {
 	select {
 	case <-ctx.Done():
@@ -50,17 +58,18 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, err
 	}
 
-	for i := range n {
-		vector := &buf[i]
-		var val float64
-		if len(vector.Samples) == 1 {
-			val = vector.Samples[0]
+	result := o.GetPool().GetVectorBatch()
+	for _, vector := range in {
+		sv := o.GetPool().GetStepVector(vector.T)
+		if len(vector.Samples) != 1 {
+			sv.AppendSample(o.GetPool(), 0, math.NaN())
 		} else {
-			val = math.NaN()
+			sv.AppendSample(o.GetPool(), 0, vector.Samples[0])
 		}
-		vector.Reset(vector.T)
-		vector.AppendSample(0, val)
+		result = append(result, sv)
+		o.next.GetPool().PutStepVector(vector)
 	}
+	o.next.GetPool().PutVectors(in)
 
 	return n, nil
 }
