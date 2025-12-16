@@ -135,12 +135,25 @@ func (o *scalarOperator) GetPool() *model.VectorPool {
 }
 
 func (o *scalarOperator) loadSeries(ctx context.Context) error {
-	vectorSide := o.lhs
+	var (
+		vectorSide = o.lhs
+		scalarSide = o.rhs
+	)
 	if o.lhsType == parser.ValueTypeScalar {
-		vectorSide = o.rhs
+		vectorSide, scalarSide = o.rhs, o.lhs
 	}
+	errChan := make(chan error, 1)
+	go func() {
+		if _, err := scalarSide.Series(ctx); err != nil {
+			errChan <- err
+		}
+		close(errChan)
+	}()
 	vectorSeries, err := vectorSide.Series(ctx)
 	if err != nil {
+		return err
+	}
+	if err := <-errChan; err != nil {
 		return err
 	}
 
