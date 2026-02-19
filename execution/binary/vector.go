@@ -103,7 +103,7 @@ func (o *vectorOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, err
 	}
 
-	var lhs []model.StepVector
+	var lhsN int
 	lerrChan := make(chan error, 1)
 	go func() {
 		var err error

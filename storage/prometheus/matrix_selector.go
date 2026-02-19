@@ -196,7 +196,7 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 			// Also, allow operator to exist independently without being nested
 			// under parser.Call by implementing new data model.
 			// https://github.com/oteldb/promql-engine/issues/39
-			f, h, ok, err := scanner.buffer.Eval(ctx, o.scalarArg, o.scalarArg2, scanner.metricAppearedTs)
+			f, h, ok, warn, err := scanner.buffer.Eval(ctx, o.scalarArg, o.scalarArg2, scanner.metricAppearedTs)
 			if err != nil {
 				return 0, err
 			}

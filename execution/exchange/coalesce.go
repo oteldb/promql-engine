@@ -108,6 +108,8 @@ func (c *coalesce) Next(ctx context.Context, buf []model.StepVector) (int, error
 	var mu sync.Mutex
 	var minTs int64 = math.MaxInt64
 	errChan := make(errorChan, len(c.operators))
+	vectorCounts := make([]int, len(c.operators))
+
 	for idx, o := range c.operators {
 		// We already have a batch from the previous iteration.
 		if c.inVectors[idx] != nil {

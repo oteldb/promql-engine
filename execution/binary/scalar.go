@@ -88,7 +88,7 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, err
 	}
 
-	var lhs []model.StepVector
+	var lhsN int
 	lerrChan := make(chan error, 1)
 	go func() {
 		var err error
@@ -115,45 +115,24 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 		return 0, nil
 	}
 
-	batch := o.pool.GetVectorBatch()
-	for i := range lhs {
-		if i < len(rhs) {
-			step := o.execBinaryOperation(ctx, lhs[i], rhs[i])
-			batch = append(batch, step)
-			o.rhs.GetPool().PutStepVector(rhs[i])
-		}
-		o.lhs.GetPool().PutStepVector(lhs[i])
+	n := 0
+	minN := min(rhsN, lhsN)
+
+	for i := 0; i < minN && n < len(buf); i++ {
+		o.execBinaryOperation(ctx, o.lhsBuf[i], o.rhsBuf[i], &buf[n])
+		n++
 	}
-	o.lhs.GetPool().PutVectors(lhs)
-	o.rhs.GetPool().PutVectors(rhs)
 
-	return batch, nil
-}
-
-func (o *scalarOperator) GetPool() *model.VectorPool {
-	return o.pool
+	return n, nil
 }
 
 func (o *scalarOperator) loadSeries(ctx context.Context) error {
-	var (
-		vectorSide = o.lhs
-		scalarSide = o.rhs
-	)
+	vectorSide := o.lhs
 	if o.lhsType == parser.ValueTypeScalar {
-		vectorSide, scalarSide = o.rhs, o.lhs
+		vectorSide = o.rhs
 	}
-	errChan := make(chan error, 1)
-	go func() {
-		if _, err := scalarSide.Series(ctx); err != nil {
-			errChan <- err
-		}
-		close(errChan)
-	}()
 	vectorSeries, err := vectorSide.Series(ctx)
 	if err != nil {
-		return err
-	}
-	if err := <-errChan; err != nil {
 		return err
 	}
 
