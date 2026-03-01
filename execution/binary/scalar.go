@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"

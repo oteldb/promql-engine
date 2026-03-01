@@ -6,7 +6,7 @@ package prometheus_test
 import (
 	"testing"
 
-	storage "github.com/thanos-io/promql-engine/storage/prometheus"
+	storage "github.com/oteldb/promql-engine/storage/prometheus"
 
 	"github.com/prometheus/prometheus/model/labels"
 	promstg "github.com/prometheus/prometheus/storage"

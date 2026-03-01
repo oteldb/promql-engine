@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/telemetry"
-	"github.com/thanos-io/promql-engine/extlabels"
-	"github.com/thanos-io/promql-engine/logicalplan"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/telemetry"
+	"github.com/oteldb/promql-engine/extlabels"
+	"github.com/oteldb/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/prometheus/model/labels"

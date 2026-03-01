@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/engine"
-	"github.com/thanos-io/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/engine"
+	"github.com/oteldb/promql-engine/logicalplan"
 
 	"github.com/cortexproject/promqlsmith"
 	"github.com/efficientgo/core/errors"
@@ -87,7 +87,7 @@ func validateExpr(expr parser.Expr, testType testType) bool {
 				if testType == testTypeNativeHistogram {
 					// Prometheus engine filters out native histograms in nested sort().
 					// Thanos engine implements sorting only at the presentation time and ignores nested sort().
-					// See: https://github.com/thanos-io/promql-engine/pull/595
+					// See: https://github.com/oteldb/promql-engine/pull/595
 					valid = false
 					return errors.New("error")
 				}
@@ -96,7 +96,7 @@ func validateExpr(expr parser.Expr, testType testType) bool {
 				case *parser.StepInvariantExpr:
 					// Thanos engine cannot correctly handle a MatrixSelector wrapped by StepInvariant.
 					// eg: predict_linear({__name__="http_request_duration_seconds"}[5m] @ end(), 0.5)
-					// See: https://github.com/thanos-io/promql-engine/pull/527
+					// See: https://github.com/oteldb/promql-engine/pull/527
 					if _, ok := t.Expr.(*parser.MatrixSelector); ok {
 						valid = false
 						return errors.New("error")
@@ -104,7 +104,7 @@ func validateExpr(expr parser.Expr, testType testType) bool {
 				}
 			case "timestamp":
 				if testType == testTypeNativeHistogram {
-					// TODO(johrry): Remove after merging https://github.com/thanos-io/promql-engine/pull/598
+					// TODO(johrry): Remove after merging https://github.com/oteldb/promql-engine/pull/598
 					valid = false
 					return errors.New("error")
 				}

@@ -21,20 +21,20 @@ import (
 	"sort"
 	"time"
 
-	"github.com/thanos-io/promql-engine/execution/aggregate"
-	"github.com/thanos-io/promql-engine/execution/binary"
-	"github.com/thanos-io/promql-engine/execution/exchange"
-	"github.com/thanos-io/promql-engine/execution/function"
-	"github.com/thanos-io/promql-engine/execution/model"
-	"github.com/thanos-io/promql-engine/execution/noop"
-	"github.com/thanos-io/promql-engine/execution/parse"
-	"github.com/thanos-io/promql-engine/execution/remote"
-	"github.com/thanos-io/promql-engine/execution/scan"
-	"github.com/thanos-io/promql-engine/execution/step_invariant"
-	"github.com/thanos-io/promql-engine/execution/unary"
-	"github.com/thanos-io/promql-engine/logicalplan"
-	"github.com/thanos-io/promql-engine/query"
-	"github.com/thanos-io/promql-engine/storage"
+	"github.com/oteldb/promql-engine/execution/aggregate"
+	"github.com/oteldb/promql-engine/execution/binary"
+	"github.com/oteldb/promql-engine/execution/exchange"
+	"github.com/oteldb/promql-engine/execution/function"
+	"github.com/oteldb/promql-engine/execution/model"
+	"github.com/oteldb/promql-engine/execution/noop"
+	"github.com/oteldb/promql-engine/execution/parse"
+	"github.com/oteldb/promql-engine/execution/remote"
+	"github.com/oteldb/promql-engine/execution/scan"
+	"github.com/oteldb/promql-engine/execution/step_invariant"
+	"github.com/oteldb/promql-engine/execution/unary"
+	"github.com/oteldb/promql-engine/logicalplan"
+	"github.com/oteldb/promql-engine/query"
+	"github.com/oteldb/promql-engine/storage"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/prometheus/prometheus/promql"
@@ -124,7 +124,7 @@ func newCall(ctx context.Context, e *logicalplan.FunctionCall, scanners storage.
 	}
 
 	// TODO(saswatamcode): Range vector result might need new operator
-	// before it can be non-nested. https://github.com/thanos-io/promql-engine/issues/39
+	// before it can be non-nested. https://github.com/oteldb/promql-engine/issues/39
 	for i := range e.Args {
 		switch t := e.Args[i].(type) {
 		case *logicalplan.Subquery:
@@ -176,7 +176,7 @@ func newAbsentOverTimeOperator(ctx context.Context, call *logicalplan.FunctionCa
 
 func newRangeVectorFunction(ctx context.Context, e *logicalplan.FunctionCall, t *logicalplan.MatrixSelector, scanners storage.Scanners, opts *query.Options, hints promstorage.SelectHints) (model.VectorOperator, error) {
 	// TODO(saswatamcode): Range vector result might need new operator
-	// before it can be non-nested. https://github.com/thanos-io/promql-engine/issues/39
+	// before it can be non-nested. https://github.com/oteldb/promql-engine/issues/39
 	milliSecondRange := t.Range.Milliseconds()
 	if parse.IsExtFunction(e.Func.Name) {
 		milliSecondRange += opts.ExtLookbackDelta.Milliseconds()
