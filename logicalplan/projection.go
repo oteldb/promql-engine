@@ -7,7 +7,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/util/annotations"

@@ -1,4 +1,4 @@
-module github.com/thanos-io/promql-engine
+module github.com/oteldb/promql-engine
 
 go 1.24.0
 

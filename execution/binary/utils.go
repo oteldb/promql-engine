@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/thanos-io/promql-engine/warnings"
+	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"

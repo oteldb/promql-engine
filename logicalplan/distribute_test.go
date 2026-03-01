@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/cortexproject/promqlsmith"
 	"github.com/efficientgo/core/testutil"

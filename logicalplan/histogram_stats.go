@@ -4,7 +4,7 @@
 package logicalplan
 
 import (
-	"github.com/thanos-io/promql-engine/query"
+	"github.com/oteldb/promql-engine/query"
 
 	"github.com/prometheus/prometheus/util/annotations"
 )

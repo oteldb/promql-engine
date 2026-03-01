@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thanos-io/promql-engine/api"
-	"github.com/thanos-io/promql-engine/engine"
+	"github.com/oteldb/promql-engine/api"
+	"github.com/oteldb/promql-engine/engine"
 
 	"github.com/efficientgo/core/errors"
 	"github.com/efficientgo/core/testutil"
@@ -111,7 +111,7 @@ func TestDistributedAggregations(t *testing.T) {
 			},
 		},
 		{
-			// Repro for https://github.com/thanos-io/promql-engine/issues/187.
+			// Repro for https://github.com/oteldb/promql-engine/issues/187.
 			name: "series with different ranges in a newer engine",
 			seriesSets: []partition{{
 				extLset: []labels.Labels{labels.FromStrings("zone", "east-1"), labels.FromStrings("zone", "east-1")},
