@@ -58,7 +58,7 @@ func (p ProjectionOptimizer) pushProjection(node *Node, projection *Projection) 
 		}
 
 	case *Binary:
-		var highCard, lowCard = n.LHS, n.RHS
+		highCard, lowCard := n.LHS, n.RHS
 
 		if n.VectorMatching == nil || (!n.VectorMatching.On && len(n.VectorMatching.MatchingLabels) == 0) {
 			if IsConstantExpr(lowCard) {

@@ -120,5 +120,4 @@ func TestPassthrough(t *testing.T) {
 
 		testutil.Equals(t, `{region="east"}`, renderExprTree(optimizedPlan.Root()))
 	})
-
 }

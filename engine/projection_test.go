@@ -114,9 +114,11 @@ func (m *projectionQuerier) Select(ctx context.Context, sortSeries bool, hints *
 		hints:     hints,
 	}
 }
+
 func (m *projectionQuerier) LabelValues(ctx context.Context, name string, _ *storage.LabelHints, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	return nil, nil, nil
 }
+
 func (m *projectionQuerier) LabelNames(ctx context.Context, _ *storage.LabelHints, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	return nil, nil, nil
 }

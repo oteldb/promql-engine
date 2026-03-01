@@ -17,9 +17,11 @@ import (
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
-var spaces = regexp.MustCompile(`\s+`)
-var openParenthesis = regexp.MustCompile(`\(\s+`)
-var closedParenthesis = regexp.MustCompile(`\s+\)`)
+var (
+	spaces            = regexp.MustCompile(`\s+`)
+	openParenthesis   = regexp.MustCompile(`\(\s+`)
+	closedParenthesis = regexp.MustCompile(`\s+\)`)
+)
 
 // renderExprTree renders the expression into a string. It is useful
 // in tests to use strings for assertions in cases where the "String()"

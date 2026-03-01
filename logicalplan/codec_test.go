@@ -18,7 +18,7 @@ import (
 const testRuns = 100
 
 func TestNodesMarshalJSON(t *testing.T) {
-	var cases = []struct {
+	cases := []struct {
 		name  string
 		query string
 	}{

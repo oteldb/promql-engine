@@ -104,7 +104,7 @@ func (o *vectorOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 	}
 
 	var lhsN int
-	var lerrChan = make(chan error, 1)
+	lerrChan := make(chan error, 1)
 	go func() {
 		var err error
 		lhsN, err = o.lhs.Next(ctx, o.lhsBuf)
@@ -151,7 +151,7 @@ func (o *vectorOperator) initOnce(ctx context.Context) error {
 
 func (o *vectorOperator) init(ctx context.Context) error {
 	var highCardSide []labels.Labels
-	var errChan = make(chan error, 1)
+	errChan := make(chan error, 1)
 	go func() {
 		var err error
 		highCardSide, err = o.lhs.Series(ctx)

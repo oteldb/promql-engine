@@ -112,6 +112,7 @@ func (o *relabelOperator) loadSeriesForLabelJoin(series []labels.Labels) error {
 	}
 	return nil
 }
+
 func (o *relabelOperator) loadSeriesForLabelReplace(series []labels.Labels) error {
 	labelReplaceDst, err := logicalplan.UnwrapString(o.funcExpr.Args[1])
 	if err != nil {

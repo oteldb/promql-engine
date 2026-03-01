@@ -89,7 +89,7 @@ func (o *scalarOperator) Next(ctx context.Context, buf []model.StepVector) (int,
 	}
 
 	var lhsN int
-	var lerrChan = make(chan error, 1)
+	lerrChan := make(chan error, 1)
 	go func() {
 		var err error
 		lhsN, err = o.lhs.Next(ctx, o.lhsBuf)

@@ -25,7 +25,7 @@ func (m SelectorBatchSize) Optimize(plan Node, _ *query.Options) (Node, annotati
 	Traverse(&plan, func(current *Node) {
 		switch e := (*current).(type) {
 		case *FunctionCall:
-			//TODO: calls can reduce the labelset of the input; think histogram_quantile reducing
+			// TODO: calls can reduce the labelset of the input; think histogram_quantile reducing
 			// multiple "le" labels into one output. We cannot handle this in batching. Revisit
 			// what is safe here.
 			canBatch = false
