@@ -5624,7 +5624,7 @@ func TestEngineRecoversFromPanic(t *testing.T) {
 		testutil.Ok(t, err)
 
 		r := q.Exec(ctx)
-		testutil.Assert(t, r.Err.Error() == "unexpected error: panic!")
+		testutil.Assert(t, r.Err.Error() == "unexpected panic: panic!")
 	})
 
 	t.Run("range", func(t *testing.T) {
@@ -5634,7 +5634,7 @@ func TestEngineRecoversFromPanic(t *testing.T) {
 		testutil.Ok(t, err)
 
 		r := q.Exec(ctx)
-		testutil.Assert(t, r.Err.Error() == "unexpected error: panic!")
+		testutil.Assert(t, r.Err.Error() == "unexpected panic: panic!")
 	})
 }
 
