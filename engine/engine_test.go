@@ -38,7 +38,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/promql/promqltest"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
@@ -52,7 +51,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	parser.EnableExperimentalFunctions = true
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/blob/d7677d6af5953e0506ac4c08f349c62b917a443a/stats/view/worker.go#L34
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
@@ -73,10 +71,6 @@ func (s *skipTest) Run(name string, t func(*testing.T)) bool {
 }
 
 func TestPromqlAcceptance(t *testing.T) {
-	// promql acceptance tests disable experimental functions again
-	// since we use them in our tests too we need to enable them afterwards again
-	t.Cleanup(func() { parser.EnableExperimentalFunctions = true })
-
 	engine := engine.New(engine.Opts{
 		EngineOpts: promql.EngineOpts{
 			Logger:                   promslog.NewNopLogger(),
@@ -96,6 +90,7 @@ func TestPromqlAcceptance(t *testing.T) {
 			"testdata/info.test",                // info() function unsupported
 			"testdata/literals.test",            // string literal expressions as query results unsupported
 			"testdata/range_queries.test",       // matrix selector as instant query result unsupported
+			"testdata/fill-modifier.test",      // binop fill() modifiers unsupported
 		}, // TODO(sungjin1212): change to test whole cases
 		TBRun: t,
 	}
@@ -112,7 +107,7 @@ func TestVectorSelectorWithGaps(t *testing.T) {
 		EnableAtModifier:     true,
 	}
 
-	series := storage.MockSeries(
+	series := storage.MockSeries(nil, 
 		[]int64{240, 270, 300, 600, 630, 660},
 		[]float64{1, 2, 3, 4, 5, 6},
 		[]string{labels.MetricName, "foo"},
@@ -5656,6 +5651,8 @@ func (m *mockIterator) AtFloatHistogram(_ *histogram.FloatHistogram) (int64, *hi
 
 func (m *mockIterator) AtT() int64 { return m.timestamps[m.i] }
 
+func (m *mockIterator) AtST() int64 { return 0 }
+
 func (m *mockIterator) Err() error { return nil }
 
 type slowSeriesSet struct {
@@ -5677,7 +5674,7 @@ func (s *slowSeriesSet) Next() bool {
 }
 
 func (s slowSeriesSet) At() storage.Series {
-	return storage.MockSeries([]int64{0}, []float64{0}, nil)
+	return storage.MockSeries(nil, []int64{0}, []float64{0}, nil)
 }
 
 func (s slowSeriesSet) Err() error { return nil }
@@ -5734,6 +5731,8 @@ func (d *slowIterator) AtT() int64 {
 func (d *slowIterator) At() (int64, float64) {
 	return d.ts, 1
 }
+
+func (d *slowIterator) AtST() int64 { return 0 }
 
 func (d *slowIterator) Next() chunkenc.ValueType {
 	<-time.After(10 * time.Millisecond)

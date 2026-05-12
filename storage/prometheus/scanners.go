@@ -33,6 +33,9 @@ func (s *Scanners) Close() error {
 }
 
 func NewPrometheusScanners(queryable storage.Queryable, qOpts *query.Options, lplan logicalplan.Plan) (*Scanners, error) {
+	if qOpts == nil {
+		return nil, errors.New("query options cannot be nil")
+	}
 	var min, max int64
 	if lplan != nil {
 		min, max = lplan.MinMaxTime(qOpts)

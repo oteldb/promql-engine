@@ -53,6 +53,18 @@ func UnwrapParens(expr parser.Expr) parser.Expr {
 	}
 }
 
+// UnwrapNode recursively unwraps a Node until it reaches a non-wrapped node.
+func UnwrapNode(node Node) Node {
+	switch t := node.(type) {
+	case *Parens:
+		return UnwrapNode(t.Expr)
+	case *StepInvariantExpr:
+		return UnwrapNode(t.Expr)
+	default:
+		return t
+	}
+}
+
 // IsConstantExpr reports if the expression evaluates to a constant.
 func IsConstantExpr(expr Node) bool {
 	// TODO: there are more possibilities for constant expressions

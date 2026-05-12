@@ -24,7 +24,7 @@ import (
 func TestQueryExplain(t *testing.T) {
 	t.Parallel()
 	opts := promql.EngineOpts{Timeout: 1 * time.Hour}
-	series := storage.MockSeries(
+	series := storage.MockSeries(nil, 
 		[]int64{240, 270, 300, 600, 630, 660},
 		[]float64{1, 2, 3, 4, 5, 6},
 		[]string{labels.MetricName, "foo"},
@@ -170,22 +170,22 @@ func getMaxSeriesCount(got *engine.AnalyzeOutputNode) int {
 func TestQueryAnalyze(t *testing.T) {
 	opts := promql.EngineOpts{Timeout: 1 * time.Hour}
 	seriesList := []storage.Series{
-		storage.MockSeries(
+		storage.MockSeries(nil, 
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "foo"},
 		),
-		storage.MockSeries(
+		storage.MockSeries(nil, 
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-1"},
 		),
-		storage.MockSeries(
+		storage.MockSeries(nil, 
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-2"},
 		),
-		storage.MockSeries(
+		storage.MockSeries(nil, 
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-3"},

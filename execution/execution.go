@@ -65,6 +65,11 @@ func newOperator(ctx context.Context, expr logicalplan.Node, storage storage.Sca
 		return newAggregateExpression(ctx, e, storage, opts, hints)
 	case *logicalplan.Binary:
 		return newBinaryExpression(ctx, e, storage, opts, hints)
+	case *logicalplan.Subquery:
+		matrixCall := &logicalplan.FunctionCall{
+			Func: parser.Function{Name: "last_over_time"},
+		}
+		return newSubqueryFunction(ctx, matrixCall, e, storage, opts, hints)
 	case *logicalplan.Parens:
 		return newOperator(ctx, e.Expr, storage, opts, hints)
 	case *logicalplan.Unary:
@@ -130,7 +135,7 @@ func newCall(ctx context.Context, e *logicalplan.FunctionCall, scanners storage.
 	// TODO(saswatamcode): Range vector result might need new operator
 	// before it can be non-nested. https://github.com/oteldb/promql-engine/issues/39
 	for i := range e.Args {
-		switch t := e.Args[i].(type) {
+		switch t := logicalplan.UnwrapNode(e.Args[i]).(type) {
 		case *logicalplan.Subquery:
 			return newSubqueryFunction(ctx, e, t, scanners, opts, hints)
 		case *logicalplan.MatrixSelector:

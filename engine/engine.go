@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/oteldb/promql-engine/execution"
@@ -142,10 +143,20 @@ func NewWithScanners(opts Opts, scanners engstorage.Scanners) *Engine {
 		)
 	}
 
+	registerOnce.Do(func() {
+		for k, v := range parse.XFunctions {
+			if _, ok := parser.Functions[k]; !ok {
+				parser.Functions[k] = v
+			}
+		}
+	})
+
 	functions := make(map[string]*parser.Function, len(parser.Functions))
 	maps.Copy(functions, parser.Functions)
-	if opts.EnableXFunctions {
-		maps.Copy(functions, parse.XFunctions)
+	if !opts.EnableXFunctions {
+		for k := range parse.XFunctions {
+			delete(functions, k)
+		}
 	}
 
 	metrics := &engineMetrics{
@@ -231,6 +242,8 @@ type Engine struct {
 	maxSamplesPerQuery       int
 }
 
+var registerOnce sync.Once
+
 func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts *QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	idx, err := e.activeQueryTracker.Insert(ctx, qs)
 	if err != nil {
@@ -238,8 +251,17 @@ func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(qs, parser.WithFunctions(e.functions)).ParseExpr()
+	p := parser.NewParser(parser.Options{
+		EnableExperimentalFunctions:  true,
+		ExperimentalDurationExpr:     true,
+		EnableExtendedRangeSelectors: true,
+		EnableBinopFillModifiers:     true,
+	})
+	expr, err := p.ParseExpr(qs)
 	if err != nil {
+		return nil, err
+	}
+	if err := e.checkFunctions(expr); err != nil {
 		return nil, err
 	}
 	// determine sorting order before optimizers run, we do this by looking for "sort"
@@ -336,8 +358,17 @@ func (e *Engine) MakeRangeQuery(ctx context.Context, q storage.Queryable, opts *
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(qs, parser.WithFunctions(e.functions)).ParseExpr()
+	p := parser.NewParser(parser.Options{
+		EnableExperimentalFunctions:  true,
+		ExperimentalDurationExpr:     true,
+		EnableExtendedRangeSelectors: true,
+		EnableBinopFillModifiers:     true,
+	})
+	expr, err := p.ParseExpr(qs)
 	if err != nil {
+		return nil, err
+	}
+	if err := e.checkFunctions(expr); err != nil {
 		return nil, err
 	}
 
@@ -486,6 +517,26 @@ func (e *Engine) storageScanners(queryable storage.Queryable, qOpts *query.Optio
 		return promstorage.NewPrometheusScanners(queryable, qOpts, lplan)
 	}
 	return e.scanners, nil
+}
+
+func (e *Engine) checkFunctions(expr parser.Expr) error {
+	return parser.Walk(funcChecker{functions: e.functions}, expr, nil)
+}
+
+type funcChecker struct {
+	functions map[string]*parser.Function
+}
+
+func (f funcChecker) Visit(node parser.Node, path []parser.Node) (parser.Visitor, error) {
+	if node == nil {
+		return nil, nil
+	}
+	if call, ok := node.(*parser.Call); ok {
+		if _, ok := f.functions[call.Func.Name]; !ok {
+			return nil, errors.Newf("1:1: parse error: unknown function with name %q", call.Func.Name)
+		}
+	}
+	return f, nil
 }
 
 type Query struct {
