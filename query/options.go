@@ -18,6 +18,7 @@ type Options struct {
 	NoStepSubqueryIntervalFn func(time.Duration) time.Duration
 	EnableAnalysis           bool
 	DecodingConcurrency      int
+	SampleTracker            SampleTracker // Tracks current samples in memory
 }
 
 // TotalSteps returns the total number of steps in the query, regardless of batching.
@@ -48,15 +49,24 @@ func (o *Options) WithEndTime(end time.Time) *Options {
 	return &result
 }
 
-func NestedOptionsForSubquery(opts *Options, step, queryRange, offset time.Duration) *Options {
+func NestedOptionsForSubquery(opts *Options, step, queryRange, offset time.Duration, timestamp *int64) *Options {
+	end := opts.End
+	if timestamp != nil {
+		end = time.UnixMilli(*timestamp)
+	}
+
 	nOpts := &Options{
-		End:                      opts.End.Add(-offset),
+		End:                      end.Add(-offset),
 		LookbackDelta:            opts.LookbackDelta,
 		StepsBatch:               opts.StepsBatch,
 		ExtLookbackDelta:         opts.ExtLookbackDelta,
 		NoStepSubqueryIntervalFn: opts.NoStepSubqueryIntervalFn,
 		EnableAnalysis:           opts.EnableAnalysis,
 		DecodingConcurrency:      opts.DecodingConcurrency,
+		SampleTracker:            opts.SampleTracker,
+	}
+	if nOpts.SampleTracker == nil {
+		nOpts.SampleTracker = NewSampleTracker(0)
 	}
 	if step != 0 {
 		nOpts.Step = step
