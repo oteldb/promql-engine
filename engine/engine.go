@@ -286,6 +286,35 @@ func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts
 	ctx = warnings.NewContext(ctx)
 	defer func() { warns.Merge(warnings.FromContext(ctx)) }()
 
+	root := optimizedPlan.Root()
+	if subq, ok := logicalplan.UnwrapNode(root).(*logicalplan.Subquery); ok {
+		end := ts
+		if subq.Timestamp != nil {
+			end = time.UnixMilli(*subq.Timestamp)
+		}
+		end = end.Add(-subq.OriginalOffset)
+		step := subq.Step
+		if step == 0 {
+			step = e.lookbackDelta
+			if e.noStepSubqueryIntervalFn != nil {
+				step = e.noStepSubqueryIntervalFn(subq.Range)
+			}
+		}
+
+		// Standard Prometheus aligns the subquery range to the evaluation time.
+		// Start is calculated as: End - Range, but then aligned to the step.
+		// We use the same logic as Prometheus's PreprocessExpr.
+		start := end.Add(-subq.Range)
+		if step > 0 {
+			start = time.UnixMilli(step.Milliseconds() * (start.UnixMilli() / step.Milliseconds()))
+			if start.Before(end.Add(-subq.Range)) {
+				start = start.Add(step)
+			}
+		}
+
+		return e.MakeRangeQueryFromPlan(ctx, q, opts, subq.Expr, start, end, step)
+	}
+
 	scanners, err := e.storageScanners(q, qOpts, optimizedPlan)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating storage scanners")

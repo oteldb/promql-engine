@@ -65,11 +65,6 @@ func newOperator(ctx context.Context, expr logicalplan.Node, storage storage.Sca
 		return newAggregateExpression(ctx, e, storage, opts, hints)
 	case *logicalplan.Binary:
 		return newBinaryExpression(ctx, e, storage, opts, hints)
-	case *logicalplan.Subquery:
-		matrixCall := &logicalplan.FunctionCall{
-			Func: parser.Function{Name: "last_over_time"},
-		}
-		return newSubqueryFunction(ctx, matrixCall, e, storage, opts, hints)
 	case *logicalplan.Parens:
 		return newOperator(ctx, e.Expr, storage, opts, hints)
 	case *logicalplan.Unary:
@@ -208,7 +203,7 @@ func newSubqueryFunction(ctx context.Context, e *logicalplan.FunctionCall, t *lo
 		return nil, parse.ErrNotImplemented
 	}
 
-	nOpts := query.NestedOptionsForSubquery(opts, t.Step, t.Range, t.Offset)
+	nOpts := query.NestedOptionsForSubquery(opts, t.Step, t.Range, t.Offset, t.Timestamp)
 
 	hints.Start = nOpts.Start.UnixMilli()
 	hints.End = nOpts.End.UnixMilli()

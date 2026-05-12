@@ -316,6 +316,7 @@ func (m DistributedExecutionOptimizer) subqueryOpts(parents map[*Node]*Node, cur
 			subqueryParents[i].Step,
 			subqueryParents[i].Range,
 			subqueryParents[i].Offset,
+			subqueryParents[i].Timestamp,
 		)
 	}
 	return opts

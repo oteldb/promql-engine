@@ -129,7 +129,7 @@ func looksLikeLoadStmt(cont string) bool {
 	return strings.HasPrefix(strings.TrimSpace(cont), "load")
 }
 func looksLikePromQL(cont string) bool {
-	p := parser.NewParser(parser.Options{})
+	p := parser.NewParser(parser.Options{EnableExperimentalFunctions: true, ExperimentalDurationExpr: true, EnableExtendedRangeSelectors: true, EnableBinopFillModifiers: true})
 	_, err := p.ParseExpr(cont)
 	return err == nil
 }
@@ -153,7 +153,7 @@ func formatLoadDirective(load, whiteSpace string) string {
 }
 
 func formatPromQL(exprStr string) string {
-	p := parser.NewParser(parser.Options{})
+	p := parser.NewParser(parser.Options{EnableExperimentalFunctions: true, ExperimentalDurationExpr: true, EnableExtendedRangeSelectors: true, EnableBinopFillModifiers: true})
 	expr, _ := p.ParseExpr(exprStr)
 	pretty := expr.Pretty(0)
 	if strings.Count(pretty, "\n") > 0 {

@@ -49,9 +49,14 @@ func (o *Options) WithEndTime(end time.Time) *Options {
 	return &result
 }
 
-func NestedOptionsForSubquery(opts *Options, step, queryRange, offset time.Duration) *Options {
+func NestedOptionsForSubquery(opts *Options, step, queryRange, offset time.Duration, timestamp *int64) *Options {
+	end := opts.End
+	if timestamp != nil {
+		end = time.UnixMilli(*timestamp)
+	}
+
 	nOpts := &Options{
-		End:                      opts.End.Add(-offset),
+		End:                      end.Add(-offset),
 		LookbackDelta:            opts.LookbackDelta,
 		StepsBatch:               opts.StepsBatch,
 		ExtLookbackDelta:         opts.ExtLookbackDelta,

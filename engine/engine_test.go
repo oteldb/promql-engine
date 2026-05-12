@@ -38,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/promql"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/promql/promqltest"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
@@ -79,6 +80,12 @@ func TestPromqlAcceptance(t *testing.T) {
 			MaxSamples:               5e10,
 			Timeout:                  1 * time.Hour,
 			NoStepSubqueryIntervalFn: func(rangeMillis int64) int64 { return 30 * time.Second.Milliseconds() },
+			Parser: parser.NewParser(parser.Options{
+				EnableExperimentalFunctions:  true,
+				ExperimentalDurationExpr:     true,
+				EnableExtendedRangeSelectors: true,
+				EnableBinopFillModifiers:     true,
+			}),
 		},
 	})
 

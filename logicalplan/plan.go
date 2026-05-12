@@ -549,7 +549,7 @@ func logicalSubqueryTimes(path []*Node) (time.Duration, time.Duration, *int64) {
 func setOffsetForInnerSubqueries(expr parser.Expr, opts *query.Options) {
 	switch n := expr.(type) {
 	case *parser.SubqueryExpr:
-		nOpts := query.NestedOptionsForSubquery(opts, n.Step, n.Range, n.Offset)
+		nOpts := query.NestedOptionsForSubquery(opts, n.Step, n.Range, n.Offset, n.Timestamp)
 		setOffsetForAtModifier(nOpts.Start.UnixMilli(), n.Expr)
 		setOffsetForInnerSubqueries(n.Expr, nOpts)
 	default:
