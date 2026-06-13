@@ -25,6 +25,7 @@ func TestQueryExplain(t *testing.T) {
 	t.Parallel()
 	opts := promql.EngineOpts{Timeout: 1 * time.Hour}
 	series := storage.MockSeries(
+		nil,
 		[]int64{240, 270, 300, 600, 630, 660},
 		[]float64{1, 2, 3, 4, 5, 6},
 		[]string{labels.MetricName, "foo"},
@@ -112,6 +113,7 @@ func TestQueryAnalyzeOperatorID(t *testing.T) {
 	t.Parallel()
 	opts := promql.EngineOpts{Timeout: 1 * time.Hour}
 	series := storage.MockSeries(
+		nil,
 		[]int64{240, 270, 300, 600, 630, 660},
 		[]float64{1, 2, 3, 4, 5, 6},
 		[]string{`__name__`, "foo"},
@@ -218,21 +220,25 @@ func TestQueryAnalyze(t *testing.T) {
 	opts := promql.EngineOpts{Timeout: 1 * time.Hour}
 	seriesList := []storage.Series{
 		storage.MockSeries(
+			nil,
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "foo"},
 		),
 		storage.MockSeries(
+			nil,
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-1"},
 		),
 		storage.MockSeries(
+			nil,
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-2"},
 		),
 		storage.MockSeries(
+			nil,
 			[]int64{240, 270, 300, 600, 630, 660},
 			[]float64{1, 2, 3, 4, 5, 6},
 			[]string{labels.MetricName, "http_requests_total", "pod", "nginx-3"},
@@ -302,6 +308,7 @@ func TestQueryAnalyze(t *testing.T) {
 		}
 	}
 }
+
 func TestAnalyzeOutputNode_Samples(t *testing.T) {
 	t.Parallel()
 	ng := engine.New(engine.Opts{EngineOpts: promql.EngineOpts{Timeout: 1 * time.Hour}, EnableAnalysis: true, DecodingConcurrency: 2})
