@@ -17,5 +17,6 @@ jobs:
       submodules: true
       go: stable
   lint:
-    new-from-rev: origin/main
     uses: go-faster/x/.github/workflows/lint.yml@main
+    with:
+      new-from-rev: origin/main
