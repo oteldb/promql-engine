@@ -272,6 +272,14 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 	hints.Grouping = e.Grouping
 	hints.By = !e.Without
 
+	// count() pushdown: an ungrouped count over a plain vector selector is answered from the
+	// storage's series-count API, skipping sample + label materialization entirely. Falls through
+	// to the general path whenever the selector carries an offset/`@`/projection/filter (which need
+	// the materialized series) or the storage exposes no count capability.
+	if op, ok := newCountPushdown(e, scanners, opts); ok {
+		return op, nil
+	}
+
 	next, err := newOperator(ctx, e.Expr, scanners, opts, hints)
 	if err != nil {
 		return nil, err
@@ -300,6 +308,36 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 	}
 
 	return exchange.NewConcurrent(next, 2, opts), nil
+}
+
+// newCountPushdown returns a [aggregate.NewCountSelector] operator for the count() pushdown when
+// the aggregation is an ungrouped count over a plain vector selector and the storage exposes a
+// series-count capability. ok is false (and the operator nil) otherwise, so the caller falls back
+// to the general aggregate-over-Select path.
+//
+// The selector must carry no offset, `@`-timestamp, projection, post-filters, or histogram-stats
+// flag: each of those needs the materialized series, so the pushdown does not apply.
+func newCountPushdown(e *logicalplan.Aggregation, scanners storage.Scanners, opts *query.Options) (model.VectorOperator, bool) {
+	if e.Op != parser.COUNT || e.Without || len(e.Grouping) > 0 {
+		return nil, false
+	}
+
+	vs, ok := e.Expr.(*logicalplan.VectorSelector)
+	if !ok {
+		return nil, false
+	}
+
+	if vs.Offset != 0 || vs.Timestamp != nil || vs.SelectTimestamp ||
+		vs.Projection != nil || vs.DecodeNativeHistogramStats || len(vs.Filters) > 0 {
+		return nil, false
+	}
+
+	counter := scanners.SeriesCounter()
+	if counter == nil {
+		return nil, false
+	}
+
+	return aggregate.NewCountSelector(counter, vs.LabelMatchers, opts), true
 }
 
 func newBinaryExpression(ctx context.Context, e *logicalplan.Binary, scanners storage.Scanners, opts *query.Options, hints promstorage.SelectHints) (model.VectorOperator, error) {

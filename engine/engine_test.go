@@ -26,6 +26,7 @@ import (
 	"github.com/oteldb/promql-engine/extlabels"
 	"github.com/oteldb/promql-engine/logicalplan"
 	"github.com/oteldb/promql-engine/query"
+	engstorage "github.com/oteldb/promql-engine/storage"
 	"github.com/oteldb/promql-engine/storage/prometheus"
 	"github.com/oteldb/promql-engine/warnings"
 
@@ -2509,6 +2510,10 @@ func (s scannersWithWarns) NewVectorSelector(ctx context.Context, opts *query.Op
 func (s scannersWithWarns) NewMatrixSelector(ctx context.Context, opts *query.Options, hints storage.SelectHints, selector logicalplan.MatrixSelector, call logicalplan.FunctionCall) (model.VectorOperator, error) {
 	warnings.AddToContext(s.warn, ctx)
 	return s.promScanners.NewMatrixSelector(ctx, opts, hints, selector, call)
+}
+
+func (s scannersWithWarns) SeriesCounter() engstorage.SeriesCounter {
+	return s.promScanners.SeriesCounter()
 }
 
 func TestWarningsPlanCreation(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"github.com/oteldb/promql-engine/execution/parse"
 	"github.com/oteldb/promql-engine/logicalplan"
 	"github.com/oteldb/promql-engine/query"
+	engstorage "github.com/oteldb/promql-engine/storage"
 	"github.com/oteldb/promql-engine/warnings"
 
 	"github.com/efficientgo/core/errors"
@@ -26,6 +27,17 @@ type Scanners struct {
 	selectors *SelectorPool
 
 	querier storage.Querier
+}
+
+// SeriesCounter returns the querier's count-pushdown capability, or nil if the backing querier
+// does not implement [engstorage.SeriesCounter] (the plan then falls back to the aggregate-over-
+// Select path).
+func (s *Scanners) SeriesCounter() engstorage.SeriesCounter {
+	if c, ok := s.querier.(engstorage.SeriesCounter); ok {
+		return c
+	}
+
+	return nil
 }
 
 func (s *Scanners) Close() error {
