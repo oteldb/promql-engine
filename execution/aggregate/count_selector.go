@@ -107,18 +107,11 @@ func (o *countSelector) Next(ctx context.Context, buf []model.StepVector) (int, 
 			return n, err
 		}
 
-		// count() is an aggregator: over an empty input vector it emits no sample (matching the
-		// generic aggregate-over-Select path and Prometheus, where count(nonexistent) is the empty
-		// vector, not {0}). So a step with zero matched series is a gap, not a zero-valued sample.
-		// The single output series (the empty label set, index 0) is only retained by the matrix
-		// builder if it accrues at least one sample, so an all-empty range yields an empty matrix.
-		if count > 0 {
-			buf[n].Reset(o.currentStep)
-			buf[n].AppendSample(0, float64(count))
-			n++
-		}
+		buf[n].Reset(o.currentStep)
+		buf[n].AppendSample(0, float64(count))
 
 		o.currentStep += o.step
+		n++
 	}
 
 	return n, nil
