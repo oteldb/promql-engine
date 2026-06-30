@@ -6076,6 +6076,12 @@ and
 			name:  "limit_ratio by",
 			query: `limit_ratio(0.33, native_histogram_series) by (foo) or native_histogram_series`,
 		},
+		{
+			// Regression: avg of histograms with infinite values (here produced
+			// by division by zero) must yield an infinity, not a NaN.
+			name:  "avg of infinite histograms",
+			query: `avg(native_histogram_series / 0)`,
+		},
 	}
 
 	defer pprof.StopCPUProfile()

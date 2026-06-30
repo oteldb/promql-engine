@@ -429,7 +429,6 @@ type AvgAcc struct {
 
 	histSum           *histogram.FloatHistogram
 	histScratch       *histogram.FloatHistogram
-	histSumScratch    *histogram.FloatHistogram
 	histCount         float64
 	warn              warnings.Warnings
 	counterResetState CounterResetState
@@ -462,7 +461,6 @@ func (a *AvgAcc) addHistogram(h *histogram.FloatHistogram) error {
 	if a.histSum == nil {
 		a.histSum = h.Copy()
 		a.histScratch = &histogram.FloatHistogram{}
-		a.histSumScratch = &histogram.FloatHistogram{}
 		return nil
 	}
 
@@ -470,20 +468,19 @@ func (a *AvgAcc) addHistogram(h *histogram.FloatHistogram) error {
 		err                  error
 		nhcbBoundsReconciled bool
 	)
+	// Incremental mean: mean = mean*(n-1)/n + h/n. This is the same update as
+	// mean + (h-mean)/n, but computed without the subtraction so that infinite
+	// values of the same sign yield an infinity rather than a NaN (matching
+	// Prometheus). The subtractive form would compute +Inf - +Inf = NaN.
+	// a.histSum holds the running mean and is mutated in place (Mul/Add return
+	// the receiver), so only h/n needs a scratch buffer.
+	q := (a.histCount - 1) / a.histCount
 	h.CopyTo(a.histScratch)
-	left := a.histScratch.Div(a.histCount)
-	a.histSum.CopyTo(a.histSumScratch)
-	right := a.histSumScratch.Div(a.histCount)
-	toAdd, _, nhcbBoundsReconciled, err := left.Sub(right)
+	toAdd := a.histScratch.Div(a.histCount)
+	a.histSum.Mul(q)
+	a.histSum, _, nhcbBoundsReconciled, err = a.histSum.Add(toAdd)
 	if nhcbBoundsReconciled {
 		a.warn |= warnings.WarnNHCBBoundsReconciledAgg
-	}
-	if err == nil {
-		var nbr bool
-		a.histSum, _, nbr, err = a.histSum.Add(toAdd)
-		if nbr {
-			a.warn |= warnings.WarnNHCBBoundsReconciledAgg
-		}
 	}
 	if err != nil {
 		a.histSum = nil
