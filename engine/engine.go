@@ -202,10 +202,12 @@ func NewWithScanners(opts Opts, scanners engstorage.Scanners) *Engine {
 	}
 }
 
-// Duplicate label checking logic uses a bitmap with 64 bits currently.
-// As long as we use this method we need to have batches that are smaller
-// then 64 steps.
-var ErrStepsBatchTooLarge = errors.New("'StepsBatch' must be less than 64")
+var (
+	// Duplicate label checking logic uses a bitmap with 64 bits currently.
+	// As long as we use this method we need to have batches that are smaller
+	// then 64 steps.
+	ErrStepsBatchTooLarge = errors.New("'StepsBatch' must be less than 64")
+)
 
 type Engine struct {
 	functions          map[string]*parser.Function
@@ -236,7 +238,7 @@ func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(parser.Options{EnableExperimentalFunctions: true}).ParseExpr(qs)
+	expr, err := parser.NewParser(qs, parser.WithFunctions(e.functions)).ParseExpr()
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +336,7 @@ func (e *Engine) MakeRangeQuery(ctx context.Context, q storage.Queryable, opts *
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(parser.Options{EnableExperimentalFunctions: true}).ParseExpr(qs)
+	expr, err := parser.NewParser(qs, parser.WithFunctions(e.functions)).ParseExpr()
 	if err != nil {
 		return nil, err
 	}

@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/promql"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/promql/promqltest"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
@@ -52,6 +53,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	parser.EnableExperimentalFunctions = true
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/blob/d7677d6af5953e0506ac4c08f349c62b917a443a/stats/view/worker.go#L34
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
@@ -74,7 +76,7 @@ func (s *skipTest) Run(name string, t func(*testing.T)) bool {
 func TestPromqlAcceptance(t *testing.T) {
 	// promql acceptance tests disable experimental functions again
 	// since we use them in our tests too we need to enable them afterwards again
-	t.Cleanup(func() {})
+	t.Cleanup(func() { parser.EnableExperimentalFunctions = true })
 
 	engine := engine.New(engine.Opts{
 		EngineOpts: promql.EngineOpts{
@@ -112,7 +114,6 @@ func TestVectorSelectorWithGaps(t *testing.T) {
 	}
 
 	series := storage.MockSeries(
-		nil,
 		[]int64{240, 270, 300, 600, 630, 660},
 		[]float64{1, 2, 3, 4, 5, 6},
 		[]string{labels.MetricName, "foo"},
@@ -5658,8 +5659,6 @@ func (m *mockIterator) AtFloatHistogram(_ *histogram.FloatHistogram) (int64, *hi
 	return 0, nil
 }
 
-func (m *mockIterator) AtST() int64 { return 0 }
-
 func (m *mockIterator) AtT() int64 { return m.timestamps[m.i] }
 
 func (m *mockIterator) Err() error { return nil }
@@ -5683,8 +5682,7 @@ func (s *slowSeriesSet) Next() bool {
 }
 
 func (s slowSeriesSet) At() storage.Series {
-	return storage.MockSeries(
-		nil, []int64{0}, []float64{0}, nil)
+	return storage.MockSeries([]int64{0}, []float64{0}, nil)
 }
 
 func (s slowSeriesSet) Err() error { return nil }
@@ -5732,10 +5730,6 @@ func (d *slowIterator) AtHistogram(_ *histogram.Histogram) (int64, *histogram.Hi
 
 func (d *slowIterator) AtFloatHistogram(_ *histogram.FloatHistogram) (int64, *histogram.FloatHistogram) {
 	panic("not implemented")
-}
-
-func (d *slowIterator) AtST() int64 {
-	return 0
 }
 
 func (d *slowIterator) AtT() int64 {

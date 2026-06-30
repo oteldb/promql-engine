@@ -281,14 +281,10 @@ func (o *histogramOperator) processInputSeries(ctx context.Context, vectors []mo
 					buf[n].AppendSample(uint64(i), math.NaN())
 					continue
 				}
-				v, forcedMonotonicity, _, minBucket, maxBucket, maxDiff := promql.BucketQuantile(o.scalar1Points[stepIndex], stepBuckets)
+				v, forcedMonotonicity, _ := promql.BucketQuantile(o.scalar1Points[stepIndex], stepBuckets)
 				buf[n].AppendSample(uint64(i), v)
 				if forcedMonotonicity {
-					ann := annotations.NewHistogramQuantileForcedMonotonicityInfo(o.inputSeriesNames[i], posrange.PositionRange{}, vector.T, minBucket, maxBucket, maxDiff)
-					warnings.AddToContext(
-						ann,
-						ctx,
-					)
+					warnings.AddToContext(annotations.NewHistogramQuantileForcedMonotonicityInfo(o.inputSeriesNames[i], posrange.PositionRange{}), ctx)
 				}
 			case "histogram_fraction":
 				// BucketFraction handles single bucket and other edge cases properly.
@@ -303,6 +299,7 @@ func (o *histogramOperator) processInputSeries(ctx context.Context, vectors []mo
 }
 
 func (o *histogramOperator) loadSeries(ctx context.Context) error {
+
 	o.vectorBuf = make([]model.StepVector, o.stepsBatch)
 	o.scalar1Buf = make([]model.StepVector, o.stepsBatch)
 	if o.scalar2Op != nil {
