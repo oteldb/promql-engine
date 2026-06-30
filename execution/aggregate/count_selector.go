@@ -30,10 +30,10 @@ type countSelector struct {
 	counter storage.SeriesCounter
 	matcher []*labels.Matcher
 
-	opts    *query.Options
-	lookback int64 // ms
+	opts       *query.Options
+	lookback   int64 // ms
 	mint, maxt int64 // ms
-	step    int64 // ms
+	step       int64 // ms
 
 	currentStep int64
 	series      []labels.Labels

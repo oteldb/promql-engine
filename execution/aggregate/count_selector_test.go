@@ -18,8 +18,8 @@ import (
 
 // fakeCounter records every (startMs, endMs) window CountSeries is asked for and returns count.
 type fakeCounter struct {
-	count  uint64
-	calls  []window
+	count uint64
+	calls []window
 }
 
 type window struct{ startMs, endMs int64 }
