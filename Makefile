@@ -100,7 +100,7 @@ github.com/prometheus/prometheus/pkg/testutils=github.com/efficientgo/core/testu
 github.com/stretchr/testify=github.com/efficientgo/core/testutil" $(GOMODULES)
 	@$(FAILLINT) -paths "fmt.{Print,Println,Errorf}" -ignore-tests $(GOMODULES)
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
-	@$(GOLANGCI_LINT) run
+	@$(GOLANGCI_LINT) run --new-from-rev 790ca21a49d08d653262d9c036f3f91fab48f0a3
 	@echo ">> ensuring Copyright headers"
 	@$(COPYRIGHT) $(shell find . -name "*.go")
 	@echo ">> ensuring modern go style"
