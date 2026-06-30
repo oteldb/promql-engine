@@ -5,7 +5,6 @@ package engine
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"maps"
 	"math"
@@ -266,7 +265,7 @@ func rejectXFunctions(expr parser.Expr, qs string) error {
 		}
 		perr = &parser.ParseErr{
 			PositionRange: call.PositionRange(),
-			Err:           fmt.Errorf("unknown function with name %q", call.Func.Name),
+			Err:           errors.Newf("unknown function with name %q", call.Func.Name),
 			Query:         qs,
 		}
 		return perr
