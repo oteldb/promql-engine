@@ -1431,6 +1431,10 @@ func FuzzDistributedExecutionPreservesPartitionLabels(f *testing.F) {
 			switch f.Name {
 			case "vector", "absent", "absent_over_time":
 				continue
+			// promqlsmith mishandles this variadic function's signature and
+			// generates calls with nil arguments, which panics the printer.
+			case "histogram_quantiles":
+				continue
 			}
 			enabledFunctions = append(enabledFunctions, f)
 		}

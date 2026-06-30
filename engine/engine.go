@@ -5,6 +5,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"maps"
 	"math"
@@ -146,6 +147,10 @@ func NewWithScanners(opts Opts, scanners engstorage.Scanners) *Engine {
 	maps.Copy(functions, parser.Functions)
 	if opts.EnableXFunctions {
 		maps.Copy(functions, parse.XFunctions)
+		// Since prometheus v0.312 the parser no longer accepts a custom function
+		// map (parser.WithFunctions was removed). Register the custom x-functions
+		// in the global parser table so the engine can parse them.
+		parse.RegisterXFunctions()
 	}
 
 	metrics := &engineMetrics{
@@ -184,6 +189,7 @@ func NewWithScanners(opts Opts, scanners engstorage.Scanners) *Engine {
 		activeQueryTracker: queryTracker,
 
 		disableDuplicateLabelChecks: opts.DisableDuplicateLabelChecks,
+		enableXFunctions:            opts.EnableXFunctions,
 
 		logger:             opts.Logger,
 		lookbackDelta:      opts.LookbackDelta,
@@ -213,6 +219,7 @@ type Engine struct {
 	activeQueryTracker promql.QueryTracker
 
 	disableDuplicateLabelChecks bool
+	enableXFunctions            bool
 
 	logger             *slog.Logger
 	lookbackDelta      time.Duration
@@ -229,6 +236,44 @@ type Engine struct {
 	maxSamplesPerQuery       int
 }
 
+// parseQuery parses a PromQL query string. The custom x-functions (xrate,
+// xincrease, xdelta) are registered in the global parser table when an engine
+// with EnableXFunctions is created, so the parser always accepts them once any
+// such engine exists. To keep the EnableXFunctions option meaningful, reject
+// x-functions here when this engine has them disabled, reproducing the parser's
+// "unknown function" error.
+func (e *Engine) parseQuery(qs string) (parser.Expr, error) {
+	expr, err := parser.NewParser(parser.Options{EnableExperimentalFunctions: true}).ParseExpr(qs)
+	if err != nil {
+		return nil, err
+	}
+	if !e.enableXFunctions {
+		if err := rejectXFunctions(expr, qs); err != nil {
+			return nil, err
+		}
+	}
+	return expr, nil
+}
+
+// rejectXFunctions returns a parse error if expr uses a custom x-function,
+// matching the error the parser would emit if the function were unknown.
+func rejectXFunctions(expr parser.Expr, qs string) error {
+	var perr error
+	parser.Inspect(expr, func(node parser.Node, _ []parser.Node) error {
+		call, ok := node.(*parser.Call)
+		if !ok || call.Func == nil || !parse.IsExtFunction(call.Func.Name) {
+			return nil
+		}
+		perr = &parser.ParseErr{
+			PositionRange: call.PositionRange(),
+			Err:           fmt.Errorf("unknown function with name %q", call.Func.Name),
+			Query:         qs,
+		}
+		return perr
+	})
+	return perr
+}
+
 func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts *QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	idx, err := e.activeQueryTracker.Insert(ctx, qs)
 	if err != nil {
@@ -236,7 +281,7 @@ func (e *Engine) MakeInstantQuery(ctx context.Context, q storage.Queryable, opts
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(parser.Options{EnableExperimentalFunctions: true}).ParseExpr(qs)
+	expr, err := e.parseQuery(qs)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +379,7 @@ func (e *Engine) MakeRangeQuery(ctx context.Context, q storage.Queryable, opts *
 	}
 	defer e.activeQueryTracker.Delete(idx)
 
-	expr, err := parser.NewParser(parser.Options{EnableExperimentalFunctions: true}).ParseExpr(qs)
+	expr, err := e.parseQuery(qs)
 	if err != nil {
 		return nil, err
 	}

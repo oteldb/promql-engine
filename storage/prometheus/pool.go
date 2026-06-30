@@ -6,6 +6,7 @@ package prometheus
 import (
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/prometheus/model/labels"
@@ -18,19 +19,25 @@ type SelectorPool struct {
 	selectors map[uint64]*seriesSelector
 
 	querier storage.Querier
+	// querierMu serializes series loading across all selectors that share the
+	// querier. Since prometheus v0.312 headIndexReader.Series mutates a reusable
+	// buffer on the reader, so concurrent Select/iteration on a single querier is
+	// no longer safe.
+	querierMu *sync.Mutex
 }
 
 func NewSelectorPool(querier storage.Querier) *SelectorPool {
 	return &SelectorPool{
 		selectors: make(map[uint64]*seriesSelector),
 		querier:   querier,
+		querierMu: &sync.Mutex{},
 	}
 }
 
 func (p *SelectorPool) GetSelector(mint, maxt, step int64, matchers []*labels.Matcher, hints storage.SelectHints) SeriesSelector {
 	key := hashMatchers(matchers, mint, maxt, hints)
 	if _, ok := p.selectors[key]; !ok {
-		p.selectors[key] = newSeriesSelector(p.querier, matchers, hints)
+		p.selectors[key] = newSeriesSelector(p.querier, p.querierMu, matchers, hints)
 	}
 	return p.selectors[key]
 }
@@ -38,7 +45,7 @@ func (p *SelectorPool) GetSelector(mint, maxt, step int64, matchers []*labels.Ma
 func (p *SelectorPool) GetFilteredSelector(mint, maxt, step int64, matchers, filters []*labels.Matcher, hints storage.SelectHints) SeriesSelector {
 	key := hashMatchers(matchers, mint, maxt, hints)
 	if _, ok := p.selectors[key]; !ok {
-		p.selectors[key] = newSeriesSelector(p.querier, matchers, hints)
+		p.selectors[key] = newSeriesSelector(p.querier, p.querierMu, matchers, hints)
 	}
 
 	return NewFilteredSelector(p.selectors[key], NewFilter(filters))

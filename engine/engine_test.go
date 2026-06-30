@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/promql"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/promql/promqltest"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
@@ -56,6 +57,17 @@ func TestMain(m *testing.M) {
 		// https://github.com/census-instrumentation/opencensus-go/blob/d7677d6af5953e0506ac4c08f349c62b917a443a/stats/view/worker.go#L34
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
 	)
+}
+
+// newPromEngine builds the reference Prometheus engine used for comparison in
+// tests. Since prometheus v0.312 the parser must be supplied explicitly to
+// enable experimental functions; this mirrors the options the oteldb engine
+// uses when parsing queries (see Engine.parseQuery).
+func newPromEngine(opts promql.EngineOpts) *promql.Engine {
+	if opts.Parser == nil {
+		opts.Parser = parser.NewParser(parser.Options{EnableExperimentalFunctions: true})
+	}
+	return promql.NewEngine(opts)
 }
 
 type skipTest struct {
@@ -95,6 +107,14 @@ func TestPromqlAcceptance(t *testing.T) {
 			"testdata/info.test",                // info() function unsupported
 			"testdata/literals.test",            // string literal expressions as query results unsupported
 			"testdata/range_queries.test",       // matrix selector as instant query result unsupported
+			"testdata/duration_expression.test", // experimental duration expressions unsupported
+			"testdata/start_timestamps.test",    // UseStartTimestamps feature unsupported
+			"testdata/at_modifier.test",         // subquery with @ modifier unsupported
+			"testdata/functions.test",           // delayed __name__ removal unsupported (label_replace/label_join merging)
+			"testdata/operators.test",           // delayed __name__ removal unsupported (unary negation merging)
+			"testdata/histograms.test",          // histogram_quantiles() and binop fill modifiers unsupported
+			"testdata/native_histograms.test",   // histogram_quantiles(), binop fill modifiers and delayed __name__ removal unsupported
+			"testdata/fill-modifier.test",       // experimental binop fill modifiers unsupported
 		}, // TODO(sungjin1212): change to test whole cases
 		TBRun: t,
 	}
@@ -131,7 +151,7 @@ func TestVectorSelectorWithGaps(t *testing.T) {
 	newResult := q1.Exec(ctx)
 	testutil.Ok(t, newResult.Err)
 
-	oldEngine := promql.NewEngine(opts)
+	oldEngine := newPromEngine(opts)
 	q2, err := oldEngine.NewRangeQuery(ctx, storageWithSeries(series), nil, query, start, end, 30*time.Second)
 	testutil.Ok(t, err)
 	defer q2.Close()
@@ -2374,7 +2394,7 @@ or
 						defer q1.Close()
 						newResult := q1.Exec(ctx)
 
-						oldEngine := promql.NewEngine(opts)
+						oldEngine := newPromEngine(opts)
 						q2, err := oldEngine.NewRangeQuery(ctx, storage, nil, tc.query, tc.start, tc.end, tc.step)
 						testutil.Ok(t, err)
 						defer q2.Close()
@@ -2593,7 +2613,7 @@ func TestEdgeCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			oldEngine := promql.NewEngine(opts)
+			oldEngine := newPromEngine(opts)
 			q1, err := oldEngine.NewRangeQuery(ctx, storageWithSeries(tc.series...), nil, tc.query, tc.start, tc.end, step)
 			testutil.Ok(t, err)
 
@@ -4664,7 +4684,7 @@ min without () (
 
 						newResult := q1.Exec(ctx)
 
-						oldEngine := promql.NewEngine(opts)
+						oldEngine := newPromEngine(opts)
 						q2, err := oldEngine.NewInstantQuery(ctx, testStorage, nil, tc.query, queryTime)
 						testutil.Ok(t, err)
 						defer q2.Close()
@@ -5501,7 +5521,7 @@ quantile without (pod) (
 
 			ctx := context.Background()
 
-			oldEngine := promql.NewEngine(opts)
+			oldEngine := newPromEngine(opts)
 			newEngine := engine.New(engine.Opts{EnableAnalysis: true, EngineOpts: opts})
 
 			// Instant query
@@ -5845,7 +5865,7 @@ func TestNativeHistogramRateWithNaN(t *testing.T) {
 		return qry.Exec(context.Background())
 	}
 
-	promResult := execQuery(promql.NewEngine(opts.EngineOpts))
+	promResult := execQuery(newPromEngine(opts.EngineOpts))
 	newResult := execQuery(engine.New(opts))
 	testutil.WithGoCmp(comparer).Equals(t, promResult, newResult)
 }
@@ -6090,7 +6110,7 @@ func testNativeHistograms(t *testing.T, cases []histogramTestCase, opts promql.E
 					testutil.Ok(t, err)
 					testutil.Ok(t, app.Commit())
 
-					promEngine := promql.NewEngine(opts)
+					promEngine := newPromEngine(opts)
 					thanosEngine := engine.New(engine.Opts{
 						EngineOpts:        opts,
 						LogicalOptimizers: logicalplan.AllOptimizers,
@@ -6763,7 +6783,7 @@ func TestDoubleExponentialSmoothing(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			oldEngine := promql.NewEngine(opts)
+			oldEngine := newPromEngine(opts)
 			q1, err := oldEngine.NewRangeQuery(ctx, storage, nil, tcase.query, start, end, step)
 			testutil.Ok(t, errors.Wrap(err, "create old engine range query"))
 			oldResult := q1.Exec(ctx)

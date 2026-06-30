@@ -28,15 +28,21 @@ type seriesSelector struct {
 	matchers []*labels.Matcher
 	hints    storage.SelectHints
 
+	// querierMu is shared by all selectors backed by the same querier; it
+	// serializes Select/iteration, which is not concurrency-safe on a single
+	// querier since prometheus v0.312.
+	querierMu *sync.Mutex
+
 	once   sync.Once
 	series []SignedSeries
 }
 
-func newSeriesSelector(storage storage.Querier, matchers []*labels.Matcher, hints storage.SelectHints) *seriesSelector {
+func newSeriesSelector(storage storage.Querier, querierMu *sync.Mutex, matchers []*labels.Matcher, hints storage.SelectHints) *seriesSelector {
 	return &seriesSelector{
-		storage:  storage,
-		matchers: matchers,
-		hints:    hints,
+		storage:   storage,
+		querierMu: querierMu,
+		matchers:  matchers,
+		hints:     hints,
 	}
 }
 
@@ -55,6 +61,9 @@ func (o *seriesSelector) GetSeries(ctx context.Context, shard int, numShards int
 }
 
 func (o *seriesSelector) loadSeries(ctx context.Context) error {
+	o.querierMu.Lock()
+	defer o.querierMu.Unlock()
+
 	seriesSet := o.storage.Select(ctx, false, &o.hints, o.matchers...)
 	i := 0
 	for seriesSet.Next() {

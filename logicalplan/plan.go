@@ -267,6 +267,14 @@ func replacePrometheusNodes(plan parser.Expr) Node {
 			// pushed-down timestamp function
 			switch v := UnwrapParens(t.Args[0]).(type) {
 			case *parser.VectorSelector:
+				// Prometheus weirdness: with an @ modifier, timestamp() returns the
+				// @ evaluation time, so the offset must be zeroed. This mirrors the
+				// StepInvariantExpr case below; it is reached when Prometheus wraps
+				// the whole timestamp() call in an outer StepInvariantExpr (e.g. for
+				// @ start()/end()), leaving a bare selector as the argument.
+				if v.Timestamp != nil {
+					v.OriginalOffset = 0
+				}
 				return &VectorSelector{VectorSelector: v, SelectTimestamp: true}
 			case *parser.StepInvariantExpr:
 				vs, ok := UnwrapParens(v.Expr).(*parser.VectorSelector)
