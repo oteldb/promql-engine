@@ -76,7 +76,7 @@ The current implementation uses goroutines very liberally which means the query 
 
 ### Plan optimization
 
-Each PromQL query is initially treated as a declarative (logical) plan and is optimized before execution. The engine currently supports several optimizers, some of which are enabled by default and others need to be explicitly opted-into. Optimizers implement the [Optimizer](https://pkg.go.dev/github.com/thanos-io/promql-engine/logicalplan#Optimizer) interface and all implementations can be found in the [logicalplan](https://pkg.go.dev/github.com/thanos-io/promql-engine/logicalplan) package.
+Each PromQL query is initially treated as a declarative (logical) plan and is optimized before execution. The engine currently supports several optimizers, some of which are enabled by default and others need to be explicitly opted-into. Optimizers implement the [Optimizer](https://pkg.go.dev/github.com/oteldb/promql-engine/logicalplan#Optimizer) interface and all implementations can be found in the [logicalplan](https://pkg.go.dev/github.com/oteldb/promql-engine/logicalplan) package.
 
 ### Extensibility
 
@@ -107,9 +107,9 @@ The inner aggregations are forwarded to remote engines and the global result is 
 
 An engine using the distributed mode can be created through the `NewDistributedEngine` function. The user is expected to pass an implementation of `RemoteEndpoints` which has a single `Engines()` method. When invoked, `Engines()` should return all remote engines that can be used for a single query. The `Engines()` method is called separately for each individual query which allows the `RemoteEndpoints` implementation to do continuous service discovery and inject engines as they become available.
 
-The interfaces used for remote execution can be found in [api](https://pkg.go.dev/github.com/thanos-io/promql-engine/api) package. Note that the `RemoteEngine` interface has a `NewRangeQuery` method, similar to the one in the Prometheus [v1.QueryEngine](https://pkg.go.dev/github.com/prometheus/prometheus@v0.42.0/web/api/v1#QueryEngine) interface. It is up to the user of the library to implement this method as they see fit. An example implementation could be to forward the query to an HTTP `/api/v1/query_range` endpoint of a Prometheus instance. In Thanos, this method is implemented as a gRPC call to a Thanos Querier.
+The interfaces used for remote execution can be found in [api](https://pkg.go.dev/github.com/oteldb/promql-engine/api) package. Note that the `RemoteEngine` interface has a `NewRangeQuery` method, similar to the one in the Prometheus [v1.QueryEngine](https://pkg.go.dev/github.com/prometheus/prometheus@v0.42.0/web/api/v1#QueryEngine) interface. It is up to the user of the library to implement this method as they see fit. An example implementation could be to forward the query to an HTTP `/api/v1/query_range` endpoint of a Prometheus instance. In Thanos, this method is implemented as a gRPC call to a Thanos Querier.
 
-For more details on the overall design, please refer to the [proposal](https://github.com/thanos-io/thanos/blob/main/docs/proposals-done/202301-distributed-query-execution.md) in the Thanos project.
+For more details on the overall design, please refer to the [proposal](https://github.com/oteldb/thanos/blob/main/docs/proposals-done/202301-distributed-query-execution.md) in the Thanos project.
 
 ## Differences from Prometheus PromQL Engine
 
