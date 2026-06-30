@@ -96,22 +96,30 @@ func (o *countSelector) Next(ctx context.Context, buf []model.StepVector) (int, 
 
 	n := 0
 	for n < len(buf) && o.currentStep <= o.maxt {
-		// count(selector) at T counts series with a sample in [T-lookback, T].
+		// count(selector) at T counts series with a sample in [T-lookback, T], matching Prometheus
+		// instant-vector semantics (a series counts if its latest sample is within the lookback of
+		// T). The window is NOT clamped to mint: for an instant query mint == T, so clamping would
+		// collapse it to [T, T] and count only series with a sample at exactly that millisecond;
+		// for a range query the first step(s) legitimately look back before the range start.
 		start := o.currentStep - o.lookback
-		if start < o.mint {
-			start = o.mint
-		}
 
 		count, err := o.counter.CountSeries(ctx, start, o.currentStep, o.matcher...)
 		if err != nil {
 			return n, err
 		}
 
-		buf[n].Reset(o.currentStep)
-		buf[n].AppendSample(0, float64(count))
+		// count() is an aggregator: over an empty input vector it emits no sample (matching the
+		// generic aggregate-over-Select path and Prometheus, where count(nonexistent) is the empty
+		// vector, not {0}). A step with zero matched series is a gap, not a zero-valued sample, so
+		// the single output series (the empty label set, index 0) only accrues a sample when at
+		// least one series matched — an all-empty range then yields an empty matrix.
+		if count > 0 {
+			buf[n].Reset(o.currentStep)
+			buf[n].AppendSample(0, float64(count))
+			n++
+		}
 
 		o.currentStep += o.step
-		n++
 	}
 
 	return n, nil
