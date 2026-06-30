@@ -310,12 +310,12 @@ func (m DistributedExecutionOptimizer) subqueryOpts(parents map[*Node]*Node, cur
 			subqueryParents = append(subqueryParents, subquery)
 		}
 	}
-	for i := len(subqueryParents) - 1; i >= 0; i-- {
+	for _, subqueryParent := range slices.Backward(subqueryParents) {
 		opts = query.NestedOptionsForSubquery(
 			opts,
-			subqueryParents[i].Step,
-			subqueryParents[i].Range,
-			subqueryParents[i].Offset,
+			subqueryParent.Step,
+			subqueryParent.Range,
+			subqueryParent.Offset,
 		)
 	}
 	return opts
