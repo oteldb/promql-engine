@@ -74,6 +74,10 @@ type matrixSelector struct {
 
 	nonCounterMetric string
 	hasFloats        bool
+
+	// seriesReleased guards the one-shot release of the projected label sets (o.series and each
+	// scanner's labels) once evaluation begins. See releaseSeriesLabels.
+	seriesReleased bool
 }
 
 var ErrNativeHistogramsNotSupported = errors.New("native histograms are not supported in extended range functions")
@@ -159,6 +163,12 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 	if err := o.loadSeries(ctx); err != nil {
 		return 0, err
 	}
+	// The executor resolves the whole operator tree's Series() before any Next() (and every operator
+	// memoizes its children's Series via sync.Once), so by the first Next() the projected labels have
+	// been handed to and copied by upstream consumers and are never read again — Next addresses
+	// samples by scanner signature. Release them so O(matched series) of pointer-rich labels.Labels is
+	// not kept live and GC-rescanned for the whole evaluation. See oteldb/oteldb#1116.
+	o.releaseSeriesLabels()
 
 	ts := o.currentStep
 	n := 0
@@ -301,6 +311,22 @@ func (o *matrixSelector) loadSeries(ctx context.Context) error {
 		}
 	})
 	return err
+}
+
+// releaseSeriesLabels drops the projected label sets once evaluation has begun. o.series and each
+// scanner's labels are only read by Series() (the pre-evaluation resolution phase); Next uses the
+// scanner signature as the sample id. Releasing them lets the labels.Labels backing be collected
+// when no upstream operator retains it (e.g. under an aggregation), instead of staying live for the
+// whole query. It runs once; the metric name (a single string, used for warnings) is kept.
+func (o *matrixSelector) releaseSeriesLabels() {
+	if o.seriesReleased {
+		return
+	}
+	o.seriesReleased = true
+	o.series = nil
+	for i := range o.scanners {
+		o.scanners[i].labels = labels.EmptyLabels()
+	}
 }
 
 func (o *matrixSelector) shouldCheckSampleLimit(firstSeries int64) bool {

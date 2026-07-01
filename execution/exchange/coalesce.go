@@ -37,6 +37,9 @@ func (c errorChan) getError() error {
 type coalesce struct {
 	once   sync.Once
 	series []labels.Labels
+	// seriesReleased guards the one-shot release of the concatenated label set once evaluation begins.
+	// See releaseSeries.
+	seriesReleased bool
 
 	wg        sync.WaitGroup
 	operators []model.VectorOperator
@@ -95,6 +98,11 @@ func (c *coalesce) Next(ctx context.Context, buf []model.StepVector) (int, error
 	if err != nil {
 		return 0, err
 	}
+	// The concatenated label set is consumed by upstream operators during the pre-evaluation Series()
+	// phase (which the executor runs in full before any Next()); Next merges input vectors by index
+	// and never reads c.series. Release it so the O(all-matched) label headers are not kept live for
+	// the whole evaluation. The child operators release their own labels the same way. #1116.
+	c.releaseSeries()
 
 	// Allocate temporary buffers on first use.
 	// Inner slices will be lazily pre-allocated by child operators when they append data.
@@ -214,6 +222,18 @@ func (c *coalesce) Next(ctx context.Context, buf []model.StepVector) (int, error
 	}
 
 	return n, nil
+}
+
+// releaseSeries drops the concatenated label set once evaluation has begun. c.series is only read by
+// Series() (the resolution phase); Next maps input sample ids to output ids via c.sampleOffsets.
+// Releasing it drops this operator's reference to the child labels so the backing can be collected
+// when no upstream operator retains it (the children release their own references too). Runs once.
+func (c *coalesce) releaseSeries() {
+	if c.seriesReleased {
+		return
+	}
+	c.seriesReleased = true
+	c.series = nil
 }
 
 func (c *coalesce) loadSeries(ctx context.Context) error {
