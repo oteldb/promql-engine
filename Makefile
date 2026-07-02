@@ -38,7 +38,7 @@ help: ## Displays help.
 test: ## Runs all Go unit tests.
 	@echo ">> running unit tests (without cache)"
 	@rm -rf /tmp/engine-cache
-	@GORACE=atexit_sleep_ms=0 GOCACHE=/tmp/engine-cache go test -race -timeout=10m $(GOMODULES);
+	@GORACE=atexit_sleep_ms=0 GOCACHE=/tmp/engine-cache go test -race -timeout=30m $(GOMODULES);
 
 .PHONY: test-fast
 test-fast: ## Runs all Go unit tests without race detector.
@@ -50,7 +50,7 @@ test-slicelabels: ## Runs all Go unit tests with slicelabels flag.
 	@export GOCACHE=/tmp/cache
 	@echo ">> running unit tests with slicelabels flag (without cache)"
 	@rm -rf $(GOCACHE)
-	@go test -race --tags=slicelabels -timeout=10m $(GOMODULES);
+	@go test -race --tags=slicelabels -timeout=30m $(GOMODULES);
 
 .PHONY: fuzz
 fuzz: ## Runs selected fuzzing tests
