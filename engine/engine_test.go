@@ -2536,6 +2536,10 @@ func (s scannersWithWarns) SeriesCounter() engstorage.SeriesCounter {
 	return s.promScanners.SeriesCounter()
 }
 
+func (s scannersWithWarns) GroupedSeriesCounter() engstorage.GroupedSeriesCounter {
+	return s.promScanners.GroupedSeriesCounter()
+}
+
 func TestWarningsPlanCreation(t *testing.T) {
 	var (
 		opts         = engine.Opts{EngineOpts: promql.EngineOpts{Timeout: 1 * time.Hour}}

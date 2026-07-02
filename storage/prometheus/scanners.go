@@ -40,6 +40,17 @@ func (s *Scanners) SeriesCounter() engstorage.SeriesCounter {
 	return nil
 }
 
+// GroupedSeriesCounter returns the querier's grouped-count-pushdown capability, or nil if the
+// backing querier does not implement [engstorage.GroupedSeriesCounter] (the plan then falls back
+// to the aggregate-over-Select path).
+func (s *Scanners) GroupedSeriesCounter() engstorage.GroupedSeriesCounter {
+	if c, ok := s.querier.(engstorage.GroupedSeriesCounter); ok {
+		return c
+	}
+
+	return nil
+}
+
 func (s *Scanners) Close() error {
 	return s.querier.Close()
 }
