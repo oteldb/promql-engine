@@ -55,6 +55,10 @@ type vectorSelector struct {
 
 	opts               *query.Options
 	lastTrackedSamples int
+
+	// seriesReleased guards the one-shot release of the projected label sets once evaluation begins.
+	// See releaseSeriesLabels.
+	seriesReleased bool
 }
 
 // NewVectorSelector creates operator which selects vector of series.
@@ -124,6 +128,10 @@ func (o *vectorSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 	if err := o.loadSeries(ctx); err != nil {
 		return 0, err
 	}
+	// See releaseSeriesLabels: the projected labels are only used by the pre-evaluation Series()
+	// phase, so drop them now that Next (which addresses samples by scanner signature) has begun.
+	// oteldb/oteldb#1116.
+	o.releaseSeriesLabels()
 
 	ts := o.currentStep
 	n := 0
@@ -228,6 +236,21 @@ func (o *vectorSelector) loadSeries(ctx context.Context) error {
 		}
 	})
 	return err
+}
+
+// releaseSeriesLabels drops the projected label sets once evaluation has begun. o.series and each
+// scanner's labels are only read by Series() (the pre-evaluation resolution phase); Next uses the
+// scanner signature as the sample id. Releasing them lets the labels.Labels backing be collected
+// when no upstream operator retains it, instead of staying live for the whole query. It runs once.
+func (o *vectorSelector) releaseSeriesLabels() {
+	if o.seriesReleased {
+		return
+	}
+	o.seriesReleased = true
+	o.series = nil
+	for i := range o.scanners {
+		o.scanners[i].labels = labels.EmptyLabels()
+	}
 }
 
 func (o *vectorSelector) updateSampleTracker(totalSamples int) error {
