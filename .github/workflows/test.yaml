@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main, update-prometheus-3.0 ]
+    branches: [ main ]
 
 jobs:
   skip-check:
     name: Skip check
     continue-on-error: true
-    runs-on: ubuntu-latest
+    runs-on: [ Linux ]
     outputs:
       should_skip: ${{ steps.skip-check.outputs.should_skip }}
     permissions:
@@ -31,7 +31,7 @@ jobs:
           skip_after_successful_duplicate: false
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: [ Linux ]
     name: Linters (Static Analysis) for Go
     env:
       GOBIN: /tmp/.bin
@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Cache binary dependencies
         uses: actions/cache@v4
@@ -59,7 +59,7 @@ jobs:
       - name: Lint
         run: make lint
   test:
-    runs-on: ubuntu-latest
+    runs-on: [ Linux ]
     name: Run tests
     env:
       GOBIN: /tmp/.bin
@@ -71,13 +71,13 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Run unit tests
         run: make test
 
   test-tag-slicelabels:
-    runs-on: ubuntu-latest
+    runs-on: [ Linux ]
     name: Run tests --tags=slicelabels
     env:
       GOBIN: /tmp/.bin
@@ -89,13 +89,13 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Run unit tests
         run: make test-slicelabels
 
   fuzz:
-    runs-on: ubuntu-latest
+    runs-on: [ Linux ]
     name: Run fuzz
     env:
       GOBIN: /tmp/.bin
@@ -107,7 +107,7 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
 
       - name: Run fuzzing
         run: make fuzz
