@@ -272,10 +272,11 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 	hints.Grouping = e.Grouping
 	hints.By = !e.Without
 
-	// count() pushdown: an ungrouped count over a plain vector selector is answered from the
-	// storage's series-count API, skipping sample + label materialization entirely. Falls through
-	// to the general path whenever the selector carries an offset/`@`/projection/filter (which need
-	// the materialized series) or the storage exposes no count capability.
+	// count() pushdown: an ungrouped count — or a single-label `count by (L)` — over a plain
+	// vector selector is answered from the storage's (grouped) series-count API, skipping sample +
+	// label materialization entirely. Falls through to the general path whenever the selector
+	// carries an offset/`@`/projection/filter (which need the materialized series) or the storage
+	// exposes no matching count capability.
 	if op, ok := newCountPushdown(e, scanners, opts); ok {
 		return op, nil
 	}
@@ -310,15 +311,17 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 	return exchange.NewConcurrent(next, 2, opts), nil
 }
 
-// newCountPushdown returns a [aggregate.NewCountSelector] operator for the count() pushdown when
-// the aggregation is an ungrouped count over a plain vector selector and the storage exposes a
-// series-count capability. ok is false (and the operator nil) otherwise, so the caller falls back
-// to the general aggregate-over-Select path.
+// newCountPushdown returns a count-pushdown operator when the aggregation is a count over a plain
+// vector selector and the storage exposes the matching capability: an ungrouped count() maps to
+// [aggregate.NewCountSelector] (series-count capability), a single-label `count by (L)` maps to
+// [aggregate.NewCountBySelector] (grouped-count capability). ok is false (and the operator nil)
+// otherwise, so the caller falls back to the general aggregate-over-Select path.
 //
 // The selector must carry no offset, `@`-timestamp, projection, post-filters, or histogram-stats
-// flag: each of those needs the materialized series, so the pushdown does not apply.
+// flag: each of those needs the materialized series, so the pushdown does not apply. `without`
+// and multi-label grouping likewise fall back (the storage primitive groups by one label).
 func newCountPushdown(e *logicalplan.Aggregation, scanners storage.Scanners, opts *query.Options) (model.VectorOperator, bool) {
-	if e.Op != parser.COUNT || e.Without || len(e.Grouping) > 0 {
+	if e.Op != parser.COUNT || e.Without || len(e.Grouping) > 1 {
 		return nil, false
 	}
 
@@ -330,6 +333,15 @@ func newCountPushdown(e *logicalplan.Aggregation, scanners storage.Scanners, opt
 	if vs.Offset != 0 || vs.Timestamp != nil || vs.SelectTimestamp ||
 		vs.Projection != nil || vs.DecodeNativeHistogramStats || len(vs.Filters) > 0 {
 		return nil, false
+	}
+
+	if len(e.Grouping) == 1 {
+		counter := scanners.GroupedSeriesCounter()
+		if counter == nil {
+			return nil, false
+		}
+
+		return aggregate.NewCountBySelector(counter, e.Grouping[0], vs.LabelMatchers, opts), true
 	}
 
 	counter := scanners.SeriesCounter()
