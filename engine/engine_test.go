@@ -6407,11 +6407,51 @@ func allEmptySpans(s []histogram.Span) bool {
 	return true
 }
 
+// maxHistogramSumMagnitude returns the largest absolute native histogram Sum
+// observed in the result, or 0 if it holds no histograms. It is used to scale
+// the tolerance for comparing histogram sums: when a query cancels large
+// magnitudes down to a near-zero result (e.g. `x or -x`), the residue left by
+// catastrophic cancellation depends on summation order, so different engines can
+// legitimately disagree by a few ULP of the largest intermediate value.
+func maxHistogramSumMagnitude(r *promql.Result) float64 {
+	max := 0.0
+	consider := func(h *histogram.FloatHistogram) {
+		if h == nil {
+			return
+		}
+		if m := math.Abs(h.Sum); m > max {
+			max = m
+		}
+	}
+	switch v := r.Value.(type) {
+	case promql.Vector:
+		for i := range v {
+			consider(v[i].H)
+		}
+	case promql.Matrix:
+		for i := range v {
+			for j := range v[i].Histograms {
+				consider(v[i].Histograms[j].H)
+			}
+		}
+	}
+	return max
+}
+
 var (
 	// comparer should be used to compare promql results between engines.
 	comparer = cmp.Comparer(func(x, y *promql.Result) bool {
 		compareFloats := func(l, r float64) bool {
 			return cmp.Equal(l, r, cmpopts.EquateNaNs(), cmpopts.EquateApprox(fraction, epsilon))
+		}
+		// sumMargin is an absolute tolerance for comparing histogram sums,
+		// scaled to the largest sum magnitude either engine produced. This
+		// absorbs floating-point residue from catastrophic cancellation, which
+		// is summation-order dependent and therefore differs between engines.
+		sumScale := math.Max(maxHistogramSumMagnitude(x), maxHistogramSumMagnitude(y))
+		sumMargin := math.Max(epsilon, fraction*sumScale)
+		compareSums := func(l, r float64) bool {
+			return cmp.Equal(l, r, cmpopts.EquateNaNs(), cmpopts.EquateApprox(fraction, sumMargin))
 		}
 		compareHistograms := func(l, r *histogram.FloatHistogram) bool {
 			if l == nil && r == nil {
@@ -6424,7 +6464,7 @@ var (
 
 			// Copied from https://github.com/prometheus/prometheus/blob/3d245e31d31774f62ff18c36039315fa55fe252c/model/histogram/float_histogram.go#L471
 			// and extended to use approx comparison instead of exact match.
-			if l.Schema != r.Schema || !compareFloats(l.Count, r.Count) || !compareFloats(l.Sum, r.Sum) {
+			if l.Schema != r.Schema || !compareFloats(l.Count, r.Count) || !compareSums(l.Sum, r.Sum) {
 				return false
 			}
 
