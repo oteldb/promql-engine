@@ -190,7 +190,7 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 
 	// Reset the current timestamp.
 	ts = o.currentStep
-	querierMu := o.storage.QuerierMu()
+	querierMu := selectorLock(o.storage)
 	firstSeries := o.currentSeries
 	batchSamplesDelta := 0
 	for ; o.currentSeries-firstSeries < o.seriesBatchSize && o.currentSeries < int64(len(o.scanners)); o.currentSeries++ {

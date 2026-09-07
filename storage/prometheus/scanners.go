@@ -6,6 +6,7 @@ package prometheus
 import (
 	"context"
 	"math"
+	"sync"
 
 	"github.com/oteldb/promql-engine/execution/exchange"
 	"github.com/oteldb/promql-engine/execution/model"
@@ -184,6 +185,10 @@ func (p Scanners) NewMatrixSelector(
 
 type histogramStatsSelector struct {
 	SeriesSelector
+}
+
+func (h histogramStatsSelector) QuerierMu() sync.Locker {
+	return selectorLock(h.SeriesSelector)
 }
 
 func newHistogramStatsSelector(seriesSelector SeriesSelector) histogramStatsSelector {

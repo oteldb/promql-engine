@@ -153,7 +153,7 @@ func (o *vectorSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 
 	var currStepSamples int
 	var totalSamples int
-	querierMu := o.storage.QuerierMu()
+	querierMu := selectorLock(o.storage)
 	// Reset the current timestamp.
 	ts = o.currentStep
 	fromSeries := o.currentSeries
@@ -220,7 +220,7 @@ func (o *vectorSelector) loadSeries(ctx context.Context) error {
 		o.series = make([]labels.Labels, len(series))
 		// NewMemoizedIterator primes the iterator, which reads through the shared
 		// querier's chunk readers.
-		querierMu := o.storage.QuerierMu()
+		querierMu := selectorLock(o.storage)
 		querierMu.Lock()
 		defer querierMu.Unlock()
 		for i, s := range series {
