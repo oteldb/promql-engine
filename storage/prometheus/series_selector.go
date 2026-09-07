@@ -16,7 +16,17 @@ import (
 type SeriesSelector interface {
 	GetSeries(ctx context.Context, shard, numShards int) ([]SignedSeries, error)
 	Matchers() []*labels.Matcher
+	// QuerierMu returns the lock serializing access to the shared querier.
+	// Selectors that are not backed by one return [NoopLocker].
+	QuerierMu() sync.Locker
 }
+
+// NoopLocker is a [sync.Locker] for selectors that do not share a prometheus
+// querier and therefore need no serialization.
+type NoopLocker struct{}
+
+func (NoopLocker) Lock()   {}
+func (NoopLocker) Unlock() {}
 
 type SignedSeries struct {
 	storage.Series
@@ -29,8 +39,9 @@ type seriesSelector struct {
 	hints    storage.SelectHints
 
 	// querierMu is shared by all selectors backed by the same querier; it
-	// serializes Select/iteration, which is not concurrency-safe on a single
-	// querier since prometheus v0.312.
+	// serializes Select and chunk reads, neither of which is concurrency-safe on
+	// a single querier: since prometheus v0.312 headIndexReader.Series mutates a
+	// reusable buffer, and headChunkReader caches head chunks per reader.
 	querierMu *sync.Mutex
 
 	once   sync.Once
@@ -44,6 +55,10 @@ func newSeriesSelector(storage storage.Querier, querierMu *sync.Mutex, matchers 
 		matchers:  matchers,
 		hints:     hints,
 	}
+}
+
+func (o *seriesSelector) QuerierMu() sync.Locker {
+	return o.querierMu
 }
 
 func (o *seriesSelector) Matchers() []*labels.Matcher {

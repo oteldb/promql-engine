@@ -5,6 +5,7 @@ package noop
 
 import (
 	"context"
+	"sync"
 
 	"github.com/oteldb/promql-engine/execution/model"
 	"github.com/oteldb/promql-engine/query"
@@ -35,6 +36,7 @@ func (o operator) Explain() (next []model.VectorOperator) { return nil }
 
 type noopSelector struct{}
 
+func (n noopSelector) QuerierMu() sync.Locker      { return prometheus.NoopLocker{} }
 func (n noopSelector) Matchers() []*labels.Matcher { return nil }
 func (n noopSelector) GetSeries(ctx context.Context, shard, numShards int) ([]prometheus.SignedSeries, error) {
 	return nil, nil

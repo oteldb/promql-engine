@@ -99,6 +99,7 @@ func newStorageFromQuery(query promql.Query, opts *query.Options, lbls []labels.
 	}
 }
 
+func (s *storageAdapter) QuerierMu() sync.Locker      { return promstorage.NoopLocker{} }
 func (s *storageAdapter) Matchers() []*labels.Matcher { return nil }
 
 func (s *storageAdapter) GetSeries(ctx context.Context, _, _ int) ([]promstorage.SignedSeries, error) {
