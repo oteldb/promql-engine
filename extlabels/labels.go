@@ -66,3 +66,14 @@ func DropLabels(l labels.Labels, shouldDrop func(name string) bool, b labels.Scr
 
 	return b.Labels()
 }
+
+// PreservesMetricName reports whether the over-time function fn returns its
+// samples with the reserved labels intact, mirroring prometheus' own behaviour.
+func PreservesMetricName(fn string) bool {
+	switch fn {
+	case "last_over_time", "first_over_time":
+		return true
+	default:
+		return false
+	}
+}

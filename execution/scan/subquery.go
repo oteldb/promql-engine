@@ -313,7 +313,7 @@ func (o *subqueryOperator) initSeries(ctx context.Context) error {
 		var b labels.ScratchBuilder
 		for i, s := range series {
 			lbls := s
-			if o.funcExpr.Func.Name != "last_over_time" {
+			if !extlabels.PreservesMetricName(o.funcExpr.Func.Name) {
 				lbls = extlabels.DropReserved(s, b)
 			}
 			o.series[i] = lbls

@@ -25,6 +25,10 @@ func NewFilteredSelector(selector *seriesSelector, filter Filter) SeriesSelector
 	}
 }
 
+func (f *filteredSelector) QuerierMu() sync.Locker {
+	return f.selector.QuerierMu()
+}
+
 func (f *filteredSelector) Matchers() []*labels.Matcher {
 	return append(f.selector.matchers, f.filter.Matchers()...)
 }

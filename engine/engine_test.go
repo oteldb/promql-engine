@@ -4750,11 +4750,13 @@ func TestQueryConcurrency(t *testing.T) {
 		maxQueries   = 4
 		responseChan = make(chan struct{}, maxQueries)
 	)
+	tracker, err := promql.NewActiveQueryTracker(t.TempDir(), concurrency, logger)
+	testutil.Ok(t, err)
 	newEngine := engine.New(engine.Opts{
 		EngineOpts: promql.EngineOpts{
 			Timeout:            1 * time.Hour,
 			MaxSamples:         math.MaxInt64,
-			ActiveQueryTracker: promql.NewActiveQueryTracker(t.TempDir(), concurrency, logger),
+			ActiveQueryTracker: tracker,
 		},
 	},
 	)

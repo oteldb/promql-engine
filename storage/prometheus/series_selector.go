@@ -18,6 +18,26 @@ type SeriesSelector interface {
 	Matchers() []*labels.Matcher
 }
 
+// querierLocker is implemented by selectors backed by a shared prometheus
+// querier, whose readers are not safe for concurrent use. Selectors that do not
+// implement it are assumed to need no serialization.
+type querierLocker interface {
+	QuerierMu() sync.Locker
+}
+
+// selectorLock returns the lock guarding reads through the querier backing s.
+func selectorLock(s SeriesSelector) sync.Locker {
+	if l, ok := s.(querierLocker); ok {
+		return l.QuerierMu()
+	}
+	return noopLocker{}
+}
+
+type noopLocker struct{}
+
+func (noopLocker) Lock()   {}
+func (noopLocker) Unlock() {}
+
 type SignedSeries struct {
 	storage.Series
 	Signature uint64
@@ -29,8 +49,9 @@ type seriesSelector struct {
 	hints    storage.SelectHints
 
 	// querierMu is shared by all selectors backed by the same querier; it
-	// serializes Select/iteration, which is not concurrency-safe on a single
-	// querier since prometheus v0.312.
+	// serializes Select and chunk reads, neither of which is concurrency-safe on
+	// a single querier: since prometheus v0.312 headIndexReader.Series mutates a
+	// reusable buffer, and headChunkReader caches head chunks per reader.
 	querierMu *sync.Mutex
 
 	once   sync.Once
@@ -44,6 +65,10 @@ func newSeriesSelector(storage storage.Querier, querierMu *sync.Mutex, matchers 
 		matchers:  matchers,
 		hints:     hints,
 	}
+}
+
+func (o *seriesSelector) QuerierMu() sync.Locker {
+	return o.querierMu
 }
 
 func (o *seriesSelector) Matchers() []*labels.Matcher {

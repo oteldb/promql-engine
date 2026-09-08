@@ -190,6 +190,7 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 
 	// Reset the current timestamp.
 	ts = o.currentStep
+	querierMu := selectorLock(o.storage)
 	firstSeries := o.currentSeries
 	batchSamplesDelta := 0
 	for ; o.currentSeries-firstSeries < o.seriesBatchSize && o.currentSeries < int64(len(o.scanners)); o.currentSeries++ {
@@ -204,7 +205,12 @@ func (o *matrixSelector) Next(ctx context.Context, buf []model.StepVector) (int,
 			maxt := seriesTs - o.offset
 			mint := maxt - o.selectRange
 
-			if err := scanner.selectPoints(mint, maxt, seriesTs, o.fhReader, o.isExtFunction); err != nil {
+			// The querier's chunk readers are not safe for concurrent use, and every
+			// decoding shard reads through the same querier.
+			querierMu.Lock()
+			err := scanner.selectPoints(mint, maxt, seriesTs, o.fhReader, o.isExtFunction)
+			querierMu.Unlock()
+			if err != nil {
 				return 0, err
 			}
 			// TODO(saswatamcode): Handle multi-arg functions for matrixSelectors.
@@ -277,7 +283,7 @@ func (o *matrixSelector) loadSeries(ctx context.Context) error {
 		for i, s := range series {
 			origLbls := s.Labels()
 			lbls := origLbls
-			if o.functionName != "last_over_time" && o.functionName != "first_over_time" {
+			if !extlabels.PreservesMetricName(o.functionName) {
 				lbls = extlabels.DropReserved(lbls, b)
 			}
 			o.scanners[i] = matrixScanner{
