@@ -116,5 +116,7 @@ func TestCountSelectorEmptySelectorSkips(t *testing.T) {
 	buf := make([]model.StepVector, 1)
 	n, err := op.Next(context.Background(), buf)
 	require.NoError(t, err)
-	require.Equal(t, 0, n, "count() over an empty selector must emit no sample (gap, not {0})")
+	require.Equal(t, 1, n, "an empty vector still occupies its evaluation step")
+	assert.Empty(t, buf[0].Samples)
+	assert.Equal(t, opts.Start.UnixMilli(), buf[0].T)
 }

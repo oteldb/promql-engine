@@ -17,7 +17,8 @@ import (
 // SeriesCounter is the optional count-pushdown capability a [Scanners] implementation exposes
 // from its underlying querier: it returns the number of series matching matchers with at least one
 // sample in [startMs, endMs] (Prometheus milliseconds), without materializing samples or labels.
-// It backs the PromQL `count(<selector>)` fast path. A Scanners whose querier does not support it
+// It backs the instant PromQL `count(<selector>)` fast path. Range queries reuse a single selector
+// instead of invoking this capability at every step. A Scanners whose querier does not support it
 // returns nil from SeriesCounter and the plan falls back to the aggregate-over-Select path.
 type SeriesCounter interface {
 	CountSeries(ctx context.Context, startMs, endMs int64, matchers ...*labels.Matcher) (uint64, error)
@@ -26,7 +27,7 @@ type SeriesCounter interface {
 // GroupedSeriesCounter is the grouped variant of [SeriesCounter]: it returns, per distinct value
 // of label among the series matching matchers, the number of such series with at least one sample
 // in [startMs, endMs] — without materializing samples or label sets. Series without the label are
-// grouped under the "" key. It backs the PromQL `count by (label)(<selector>)` fast path (and,
+// grouped under the "" key. It backs the instant PromQL `count by (label)(<selector>)` fast path (and,
 // through the generic outer aggregation, `count(count by (label)(...))` = distinct label values).
 // A Scanners whose querier does not support it returns nil from GroupedSeriesCounter and the plan
 // falls back to the aggregate-over-Select path.

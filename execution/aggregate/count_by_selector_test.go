@@ -135,5 +135,7 @@ func TestCountBySelectorEmpty(t *testing.T) {
 	buf := make([]model.StepVector, 1)
 	n, err := op.Next(context.Background(), buf)
 	require.NoError(t, err)
-	assert.Equal(t, 0, n)
+	assert.Equal(t, 1, n)
+	assert.Empty(t, buf[0].Samples)
+	assert.Equal(t, evalT.UnixMilli(), buf[0].T)
 }

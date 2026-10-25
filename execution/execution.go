@@ -311,7 +311,7 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 	return exchange.NewConcurrent(next, 2, opts), nil
 }
 
-// newCountPushdown returns a count-pushdown operator when the aggregation is a count over a plain
+// newCountPushdown returns an instant count-pushdown operator over a plain
 // vector selector and the storage exposes the matching capability: an ungrouped count() maps to
 // [aggregate.NewCountSelector] (series-count capability), a single-label `count by (L)` maps to
 // [aggregate.NewCountBySelector] (grouped-count capability). ok is false (and the operator nil)
@@ -321,7 +321,9 @@ func newAggregateExpression(ctx context.Context, e *logicalplan.Aggregation, sca
 // flag: each of those needs the materialized series, so the pushdown does not apply. `without`
 // and multi-label grouping likewise fall back (the storage primitive groups by one label).
 func newCountPushdown(e *logicalplan.Aggregation, scanners storage.Scanners, opts *query.Options) (model.VectorOperator, bool) {
-	if e.Op != parser.COUNT || e.Without || len(e.Grouping) > 1 {
+	// A per-step count API repeats selector resolution across the whole grid. Range aggregation
+	// instead resolves once and reuses its series-to-group projection for every step.
+	if !opts.IsInstantQuery() || e.Op != parser.COUNT || e.Without || len(e.Grouping) > 1 {
 		return nil, false
 	}
 

@@ -80,6 +80,14 @@ Each PromQL query is initially treated as a declarative (logical) plan and is op
 
 ### Extensibility
 
+Instant `count(selector)` and single-label `count by (label)(selector)` can use the storage's
+optional count capabilities. Range counts use the regular selector and aggregation pipeline:
+series are selected once, and a label projection builds a dense series-to-group mapping reused
+across the evaluation grid. This avoids resolving matchers and rebuilding group labels at every
+step. Range counts materialize selected samples and follow the normal sample limit. Empty
+evaluation steps retain their timestamps even when they contain no samples, so scalar and vector
+operands remain aligned.
+
 The engine can be extended through custom optimizers which can be injected at instantiation. These optimizers can be used to either rearrange the logical nodes into a new plan or to inject new nodes altogether.
 
 It is also possible to modify the actual execution of a query by injecting a node implementing the `UserDefinedOperator` interface. This node type has a `MakeExecutionOperator` method which can be used to control which execution operator should be instantiated for the logical node.
