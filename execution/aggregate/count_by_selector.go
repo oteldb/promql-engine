@@ -129,18 +129,16 @@ func (o *countBySelector) Next(ctx context.Context, buf []model.StepVector) (int
 
 		// Like count() over an empty vector, a step where no series matched emits no samples (a
 		// gap); a group absent at this step simply contributes none.
+		buf[n].Reset(o.currentStep)
 		if len(counts) > 0 {
-			buf[n].Reset(o.currentStep)
-
 			// Emit in series order so sample slices stay ordered by series index.
 			for i, v := range o.values {
 				if c, ok := counts[v]; ok && c > 0 {
 					buf[n].AppendSample(uint64(i), float64(c))
 				}
 			}
-
-			n++
 		}
+		n++
 
 		o.currentStep += o.step
 	}

@@ -113,11 +113,11 @@ func (o *countSelector) Next(ctx context.Context, buf []model.StepVector) (int, 
 		// vector, not {0}). A step with zero matched series is a gap, not a zero-valued sample, so
 		// the single output series (the empty label set, index 0) only accrues a sample when at
 		// least one series matched — an all-empty range then yields an empty matrix.
+		buf[n].Reset(o.currentStep)
 		if count > 0 {
-			buf[n].Reset(o.currentStep)
 			buf[n].AppendSample(0, float64(count))
-			n++
 		}
+		n++
 
 		o.currentStep += o.step
 	}
